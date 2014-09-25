@@ -28,7 +28,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             if not urlsplit.scheme:
                 return (yield from self.add_protocol(message, payload, url))
             elif urlsplit.scheme == 'file':
-                if url == 'file:///openwepro.js':
+                if url == 'file:/openwepro.js':
                     return (yield from self.send_js(message, payload))
             elif urlsplit.scheme == 'http' or urlsplit.scheme == 'https':
                 return (yield from self.do_proxy(message, payload, url))
