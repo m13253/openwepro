@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import urllib.parse
 import urllib.request
 import aiohttp
@@ -20,6 +21,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
     @asyncio.coroutine
     def handle_request(self, message, payload):
+        url_matcher = re.compile('(.*?)/(.*?)/(.*?)(?:/:/(.*))?$')
         url = message.path.lstrip('/')
         if not url:
             return (yield from self.homepage(message, payload))
