@@ -118,6 +118,7 @@ window.XMLHttpRequest = function() {
 
 var oldImage = window.Image;
 window.Image = function() {
+    /* Thank you, http://stackoverflow.com/a/13839919/2557927 */
     var unbind = Function.bind.bind(Function.bind);
     return injectNode(new (unbind(oldImage, null).call(null)));
 }
