@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import re
+import time
 import urllib.parse
 import urllib.request
 import aiohttp
@@ -52,6 +53,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
     @asyncio.coroutine
     def do_http_proxy(self, message, payload, url):
+        self.log_proxy.info(url)
         request_headers = [(k, v) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'HOST', 'REFERER', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
         if 'X-Forwarded-For' in message.headers:
             x_forwarded_for = list(map(str.strip, message.headers.get('X-Forwarded-For', '').split(',')))
@@ -98,6 +100,13 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
 
 def start():
+    log_handler = logging.StreamHandler()
+    log_handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s'))
+    log_handler.setLevel(logging.INFO)
+    HttpRequestHandler.log_proxy = logging.getLogger('openwepro.proxy')
+    HttpRequestHandler.log_proxy.setLevel(logging.INFO)
+    HttpRequestHandler.log_proxy.addHandler(log_handler)
+
     http_proxy = urllib.request.getproxies().get('http')
     if http_proxy:
         HttpRequestHandler.upstream_connector = aiohttp.connector.ProxyConnector(proxy=http_proxy)
