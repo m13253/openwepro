@@ -30,14 +30,13 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
     @asyncio.coroutine
     def send_homepage(self, message, payload):
-        responseHtml = b'<h1>It works!</h1>'
         response = aiohttp.Response(
             self.writer, 200, http_version=message.version
         )
         response.add_header('Content-Type', 'text/html; charset=utf-8')
-        response.add_header('Content-Length', str(len(responseHtml)))
+        response.add_header('Content-Length', str(len(self.clienthtml)))
         response.send_headers()
-        response.write(responseHtml)
+        response.write(self.clienthtml)
         yield from response.write_eof()
 
     @asyncio.coroutine
@@ -103,6 +102,8 @@ def start():
         HttpRequestHandler.upstream_connector = aiohttp.connector.ProxyConnector(proxy=http_proxy)
     else:
         HttpRequestHandler.upstream_connector = aiohttp.connector.TCPConnector()
+    with open('weproclient.html', 'rb') as f:
+        HttpRequestHandler.clienthtml = f.read()
     with open('weproclient.js', 'rb') as f:
         HttpRequestHandler.clientjs = f.read()
 

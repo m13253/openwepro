@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OpenWepro</title>
+</head>
+<body>
+<form id="openwepro" action="#">
+<input id="openwepro_url" value="https://github.com/m13253/openwepro" />
+<input type="submit" value="Go!" />
+</form>
+<script language="javascript">
+(function(window) {
+"use strict";
+var urlPrefix = "";
+document.getElementById("openwepro").addEventListener("submit", function(e) {
+    var url = document.getElementById("openwepro_url").value;
+    var convURLMatcher = new RegExp("^([^/]*)://(.*?)(?:/(.*))?$");
+    var convURLParsed = convURLMatcher.exec(url);
+    if(!convURLParsed) {
+        url = "http://" + url;
+        convURLParsed = convURLMatcher.exec(url);
+        if(!convURLParsed)
+            throw "Assersion error: convURLParsed != null";
+    }
+    location.href = urlPrefix + "/" + convURLParsed[1] + "/" + convURLParsed[2].split(".").reverse().join("/") + "/:/" + (convURLParsed[3] || "");
+    e.preventDefault();
+});
+}(this));
+</script>
+</body>
+</html>
