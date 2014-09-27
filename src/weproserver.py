@@ -76,14 +76,21 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             response.add_header('Content-Length', request.headers['Content-Length'])
         response.add_header('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval'")
         response.send_headers()
-        if content_type == 'text/html':
-            response.write(b'<script language="javascript" src="/about/openwepro.js"></script><!-- OpenWepro -->\r\n')
-
-        while True:
-            data = yield from request.content.read(1024)
-            if not data:
-                break
-            response.write(data)
+        if content_type == 'text/css':
+            while True:
+                data = yield from request.content.readline()
+                if not data:
+                    break
+                print(data)
+                response.write(data)
+        else:
+            if content_type == 'text/html':
+                response.write(b'<script language="javascript" src="/about/openwepro.js"></script><!-- OpenWepro -->\r\n')
+            while True:
+                data = yield from request.content.read(1024)
+                if not data:
+                    break
+                response.write(data)
         yield from response.write_eof()
 
     @asyncio.coroutine
