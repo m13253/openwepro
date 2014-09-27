@@ -11,14 +11,6 @@ import aiohttp.server
 
 
 class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        http_proxy = urllib.request.getproxies().get('http')
-        if http_proxy:
-            self.upstream_connector = aiohttp.connector.ProxyConnector(proxy=http_proxy)
-        else:
-            self.upstream_connector = aiohttp.connector.TCPConnector()
-
     @asyncio.coroutine
     def handle_request(self, message, payload):
         url = message.path.lstrip('/')
@@ -50,18 +42,13 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
     @asyncio.coroutine
     def send_js(self, message, payload):
-        try:
-            HttpRequestHandler.clientjs
-        except AttributeError:
-            with open('weproclient.js', 'rb') as f:
-                HttpRequestHandler.clientjs = f.read()
         response = aiohttp.Response(
             self.writer, 200, http_version=message.version
         )
         response.add_header('Content-Type', 'text/javascript; charset=utf-8')
-        response.add_header('Content-Length', str(len(HttpRequestHandler.clientjs)))
+        response.add_header('Content-Length', str(len(self.clientjs)))
         response.send_headers()
-        response.write(HttpRequestHandler.clientjs)
+        response.write(self.clientjs)
         yield from response.write_eof()
 
     @asyncio.coroutine
@@ -84,8 +71,8 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         )
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
         response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-LENGTH', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING'}])
-        if content_type not in {'text/html', 'text/css'} and 'Content-Type' in request.headers:
-            response.add_headers('Content-Type', request.headers['Content-Type'])
+        if 'Content-Encoding' not in request.headers and 'Content-Type' in request.headers and content_type not in {'text/html', 'text/css'}:
+            response.add_header('Content-Length', request.headers['Content-Length'])
         response.send_headers()
         if content_type == 'text/html':
             response.write(b'<script language="javascript" src="/about/openwepro.js"></script><!-- OpenWepro -->\r\n')
@@ -111,6 +98,14 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
 
 def start():
+    http_proxy = urllib.request.getproxies().get('http')
+    if http_proxy:
+        HttpRequestHandler.upstream_connector = aiohttp.connector.ProxyConnector(proxy=http_proxy)
+    else:
+        HttpRequestHandler.upstream_connector = aiohttp.connector.TCPConnector()
+    with open('weproclient.js', 'rb') as f:
+        HttpRequestHandler.clientjs = f.read()
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
         loop.create_server(
