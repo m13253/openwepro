@@ -58,4 +58,13 @@ var observer = new MutationObserver(function(mutations) {
 var observerConfig = { childList: true, attributes: true, subtree: true };
 observer.observe(document.documentElement, observerConfig);
 
+var oldXMLHttpRequest = window.XMLHttpRequest;
+window.XMLHttpRequest = function() {
+    oldXMLHttpRequest.call(this);
+    var oldOpen = this.open;
+    this.open = function(method, url, async, user, password) {
+        return oldOpen.call(this, method, convertURL(url), async, user, password);
+    }
+};
+
 }(this));
