@@ -74,7 +74,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-LENGTH', 'LOCATION', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
         if 'Content-Encoding' not in request.headers and 'Content-Length' in request.headers and content_type not in {'text/html', 'text/css'}:
             response.add_header('Content-Length', request.headers['Content-Length'])
-        response.add_header('Content-Security-Policy', "default-src 'self' 'unsafe-inline' 'unsafe-eval'")
+        response.add_header('Content-Security-Policy', "default-src data: 'self' 'unsafe-inline' 'unsafe-eval'")
         response.send_headers()
         if content_type == 'text/css':
             while True:

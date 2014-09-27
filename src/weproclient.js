@@ -22,6 +22,18 @@ function convertURL(url) {
     }
 }
 
+function convertCSS(text) {
+    var convMatcher = new RegExp("^(.*?[\\s:,])url\\s*\\(\\s*([\"']?)(.*?)\\2\\s*\\)(.*)$", "im");
+    var converted = ["/* OpenWepro */\n"];
+    var matched;
+    while(matched = convMatcher.exec(text)) {
+        converted.push(matched[1] + "url(" + matched[2] + convertURL(matched[3]) + matched[2] + ")");
+        text = matched[4];
+    }
+    converted.push(text);
+    return converted.join("");
+}
+
 function injectNode(el) {
     function injectNodeProperty(el, prop) {
         if(el.hasAttribute(prop))
@@ -52,6 +64,13 @@ function injectNode(el) {
             injectNodeProperty(el, "href");
             injectNodeProperty(el, "src");
         }
+        if(el.nodeName === "STYLE" && el.innerHTML.substr(0, 15) !== "/* OpenWepro */")
+            el.innerHTML = convertCSS(el.innerHTML);
+        if(el.hasAttribute && el.hasAttribute("style")) {
+            var currentStyle = el.getAttribute("style");
+            if(currentStyle && currentStyle.substr(0, 15) !== "/* OpenWepro */")
+                el.setAttribute("style", convertCSS(currentStyle));
+        }
     }
     return el;
 }
@@ -62,9 +81,25 @@ var observer = new MutationObserver(function(mutations) {
         if(mutation.addedNodes)
             for(var i = 0; i < mutation.addedNodes.length; i++)
                 injectNode(mutation.addedNodes[i]);
+        if(mutation.type === "characterData") {
+            if(mutation.target.parentNode.nodeName === "STYLE" && mutation.target.data.substr(0, 15) !== "/* OpenWepro */")
+                mutation.target.data = convertCSS(mutation.target.data);
+        } else if(mutation.type === "attributes") {
+            if(mutation.attributeName === "style") {
+                var currentStyle = mutation.target.getAttribute("style");
+                if(currentStyle && currentStyle.substr(0, 15) !== "/* OpenWepro */")
+                    mutation.target.setAttribute("style", convertCSS(currentStyle));
+            }
+        }
     });
 });
-var observerConfig = { childList: true, attributes: true, subtree: true };
+var observerConfig = {
+    childList: true,
+    attributes: true,
+    characterData: true,
+    subtree: true,
+    attributeFilter: ["action", "href", "src", "style"]
+};
 observer.observe(document.documentElement, observerConfig);
 
 var oldXMLHttpRequest = window.XMLHttpRequest;
@@ -75,6 +110,13 @@ window.XMLHttpRequest = function() {
         return oldOpen.call(this, method, convertURL(url), async, user, password);
     }
 };
+
+var oldImage = window.Image;
+window.Image = function() {
+    var unbind = Function.bind.bind(Function.bind);
+    return injectNode(new (unbind(oldImage, null).call(null)));
+}
+window.Image.__proto__ = oldImage.__proto__;
 
 var oldCreateElement = document.createElement;
 document.createElement = function(tagName) {
