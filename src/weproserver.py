@@ -71,14 +71,14 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             self.writer, request.status, http_version=request.version
         )
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
-        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-LENGTH', 'LOCATION', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
+        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-SECURITY-POLICY-REPORT-ONLY', 'CONTENT-LENGTH', 'LOCATION', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
         if 'Content-Encoding' not in request.headers and 'Content-Length' in request.headers and content_type not in {'text/html', 'text/css'}:
             response.add_header('Content-Length', request.headers['Content-Length'])
         response.add_header('Content-Security-Policy', "default-src data: 'self' 'unsafe-inline' 'unsafe-eval'")
         response.send_headers()
         if content_type == 'text/css':
             while True:
-                data = yield from request.content.readline()
+                data = yield from request.content.read(1024)
                 if not data:
                     break
                 print(data)
