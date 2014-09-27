@@ -70,7 +70,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         )
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
         response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-LENGTH', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING'}])
-        if 'Content-Encoding' not in request.headers and 'Content-Type' in request.headers and content_type not in {'text/html', 'text/css'}:
+        if 'Content-Encoding' not in request.headers and 'Content-Length' in request.headers and content_type not in {'text/html', 'text/css'}:
             response.add_header('Content-Length', request.headers['Content-Length'])
         response.send_headers()
         if content_type == 'text/html':
