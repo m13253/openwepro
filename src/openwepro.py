@@ -9,9 +9,11 @@ try:
 except ImportError:
     raise ImportError('Please install python-aiohttp')
 
+import logging
 import weproserver
 
 if __name__ == '__main__':
+    logging.basicConfig(format="%(asctime)s: %(message)s", level=logging.INFO)
     weproserver.start()
     try:
         asyncio.get_event_loop().run_forever()

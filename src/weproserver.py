@@ -6,7 +6,6 @@ import urllib.request
 import aiohttp
 import aiohttp.client
 import aiohttp.connector
-import aiohttp.log
 import aiohttp.multidict
 import aiohttp.server
 
@@ -53,6 +52,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
     @asyncio.coroutine
     def do_http_proxy(self, message, payload, url):
+        logging.log(url)
         request_headers = [(k, v) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'HOST', 'REFERER', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
         if 'X-Forwarded-For' in message.headers:
             x_forwarded_for = list(map(str.strip, message.headers.get('X-Forwarded-For', '').split(',')))
@@ -99,8 +99,6 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
 
 def start():
-    aiohttp.log.access_log.setLevel(logging.INFO)
-
     http_proxy = urllib.request.getproxies().get('http')
     if http_proxy:
         HttpRequestHandler.upstream_connector = aiohttp.connector.ProxyConnector(proxy=http_proxy)
