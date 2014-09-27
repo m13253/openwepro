@@ -22,6 +22,18 @@ function convertURL(url) {
     }
 }
 
+function injectNodeProperty(el, prop) {
+    if(el.hasAttribute(prop))
+        el.setAttribute(prop, el.getAttribute(prop));
+    Object.defineProperty(el, prop, {
+        configurable: true,
+        enumerable: true,
+        get: function() { return el.getAttribute(prop); },
+        set: function(value) { el.setAttribute(prop, value); return value; }
+    });
+    return el;
+}
+
 var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 var observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
@@ -31,27 +43,14 @@ var observer = new MutationObserver(function(mutations) {
                 if(el.setAttribute) {
                     var oldSetAttribute = el.setAttribute;
                     el.setAttribute = function(attr, value) {
-                        if(attr === "href" || attr === "src")
+                        if(attr === "action" || attr === "href" || attr === "src")
                             return oldSetAttribute.call(el, attr, convertURL(value));
                         else
                             return oldSetAttribute.call(el, attr, value);
                     };
-                    if(el.hasAttribute("href"))
-                        el.setAttribute("href", el.getAttribute("href"));
-                    if(el.hasAttribute("src"))
-                        el.setAttribute("src", el.getAttribute("src"));
-                    Object.defineProperty(el, "href", {
-                        configurable: true,
-                        enumerable: true,
-                        get: function() { return el.getAttribute("href"); },
-                        set: function(value) { el.setAttribute("href", value); return value; }
-                    });
-                    Object.defineProperty(el, "src", {
-                        configurable: true,
-                        enumerable: true,
-                        get: function() { return el.getAttribute("src"); },
-                        set: function(value) { el.setAttribute("src", value); return value; }
-                    });
+                    injectNodeProperty(el, "action");
+                    injectNodeProperty(el, "href");
+                    injectNodeProperty(el, "src");
                 }
             }
     });
