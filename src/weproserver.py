@@ -21,23 +21,23 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
     @asyncio.coroutine
     def handle_request(self, message, payload):
-        url_matcher = re.compile('(.*?)/(.*?)/(.*?)(?:/:/(.*))?$')
         url = message.path.lstrip('/')
         if not url:
-            return (yield from self.homepage(message, payload))
-        else:
-            urlsplit = urllib.parse.urlsplit(url)
-            if not urlsplit.scheme:
-                return (yield from self.add_protocol(message, payload, url))
-            elif urlsplit.scheme == 'file':
-                if url == 'file:/openwepro.js':
-                    return (yield from self.send_js(message, payload))
-            elif urlsplit.scheme == 'http' or urlsplit.scheme == 'https':
-                return (yield from self.do_proxy(message, payload, url))
+            return (yield from self.send_homepage(message, payload))
+        elif url == 'about/openwepro.js':
+            return (yield from self.send_js(message, payload))
+        url_matcher = re.compile('(.*?)/(.*?)/:(?:/(.*))?$')
+        url_parsed = url_matcher.match(url)
+        if not url_parsed:
+            return (yield from self.send_404(message, payload, url))
+        url_parsed = url_parsed.groups()
+        if url_parsed[0] in {'http', 'https'}:
+            target_url = '%s://%s/%s' % (url_parsed[0], '.'.join(reversed(url_parsed[1].split('/'))), url_parsed[2] or '')
+            return (yield from self.do_http_proxy(message, payload, target_url))
         return (yield from self.send_404(message, payload, url))
 
     @asyncio.coroutine
-    def homepage(self, message, payload):
+    def send_homepage(self, message, payload):
         responseHtml = b'<h1>It works!</h1>'
         response = aiohttp.Response(
             self.writer, 200, http_version=message.version
@@ -65,18 +65,8 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         yield from response.write_eof()
 
     @asyncio.coroutine
-    def add_protocol(self, message, payload, url):
-        response = aiohttp.Response(
-            self.writer, 302, http_version=message.version
-        )
-        response.add_header('Location', '/http://' + url)
-        response.add_header('Content-Length', '0')
-        response.send_headers()
-        yield from response.write_eof()
-
-    @asyncio.coroutine
-    def do_proxy(self, message, payload, url):
-        request_headers = [(k, v) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'HOST', 'X-FORWARDED-FOR'}]
+    def do_http_proxy(self, message, payload, url):
+        request_headers = [(k, v) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'HOST', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
         if 'X-Forwarded-For' in message.headers:
             x_forwarded_for = list(map(str.strip, message.headers.get('X-Forwarded-For', '').split(',')))
         else:
@@ -87,15 +77,19 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             x_forwarded_for.append(str(self.writer.get_extra_info('peername')[0]))
         request_headers.append(('X-Forwarded-For', ', '.join(x_forwarded_for)))
         request = yield from aiohttp.client.request(message.method, url, data=(yield from payload.read()), headers=request_headers, version=message.version, connector=self.upstream_connector)
+        content_type = request.headers.get('Content-Type', '').split(';', 1)[0]
 
         response = aiohttp.Response(
             self.writer, request.status, http_version=request.version
         )
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
-        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'P3P', 'STRICT-TRANSPORT-SECURITY'}])
+        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-LENGTH', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING'}])
+        if content_type not in {'text/html', 'text/css'} and 'Content-Type' in request.headers:
+            response.add_headers('Content-Type', request.headers['Content-Type'])
         response.send_headers()
-        if request.headers.get('Content-Type', '').split(';', 1)[0] == 'text/html':
-            response.write(b'<script language="javascript" src="/file:///openwepro.js"></script><!-- OpenWepro -->\r\n')
+        if content_type == 'text/html':
+            response.write(b'<script language="javascript" src="/about/openwepro.js"></script><!-- OpenWepro -->\r\n')
+
         while True:
             data = yield from request.content.read(1024)
             if not data:
