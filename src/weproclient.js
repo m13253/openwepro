@@ -102,6 +102,11 @@ var observerConfig = {
 };
 observer.observe(document.documentElement, observerConfig);
 
+var oldCreateElement = document.createElement;
+document.createElement = function(tagName) {
+    return injectNode(oldCreateElement.call(document, tagName));
+};
+
 var oldXMLHttpRequest = window.XMLHttpRequest;
 window.XMLHttpRequest = function() {
     oldXMLHttpRequest.call(this);
@@ -117,10 +122,5 @@ window.Image = function() {
     return injectNode(new (unbind(oldImage, null).call(null)));
 }
 window.Image.__proto__ = oldImage.__proto__;
-
-var oldCreateElement = document.createElement;
-document.createElement = function(tagName) {
-    return injectNode(oldCreateElement.call(document, tagName));
-};
 
 }(this));
