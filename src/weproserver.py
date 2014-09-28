@@ -87,11 +87,22 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         response.add_header('Content-Security-Policy', "default-src data: 'self' 'unsafe-inline' 'unsafe-eval'")
         response.send_headers()
         if content_type == 'text/css':
+            css_conv_matcher = re.compile('(.*?[\\s:,])url\\s*\\(\\s*(["\']?)(.*?)\\2\\s*\\)(.*)$')
+            css_conv_left = ''
             while True:
                 data = yield from request.content.read(1024)
                 if not data:
+                    if css_conv_left:
+                        response.write(css_conv_left.encode('iso-8859-1'))
                     break
-                print(data)
+                css_conv_left += data.decode('iso-8859-1')
+                while True:
+                    css_conv_match = css_conv_matcher.match(css_conv_left)
+                    if not css_conv_match:
+                        break
+                    css_conv_match = css_conv_match.groups()
+                    response.write(('%surl(%s%s%s)' % (css_conv_match[0], css_conv_match[1], self.convert_url(css_conv_match[2], url), css_conv_match[1])).encode('iso-8859-1', 'replace'))
+                    css_conv_left = css_conv_match[3]
                 response.write(data)
         else:
             if content_type == 'text/html':
@@ -112,6 +123,16 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         response.send_headers()
         response.write(responseHtml)
         yield from response.write_eof()
+
+
+    def convert_url(self, target, base=None):
+        url = target if base is None else urllib.parse.urljoin(base, target)
+        conv_url_matcher = re.compile('(https?)://(.*?)(?:/(.*))?$')
+        conv_url_match = conv_url_matcher.match(url)
+        if not conv_url_match: return target
+        conv_url_match = conv_url_match.groups()
+        print(conv_url_match)
+        return '%s/%s/%s/:/%s' % (self.path_prefix, conv_url_match[0], '/'.join(reversed(conv_url_match[1].split('.'))), conv_url_match[2] or '')
 
 
 def start():
