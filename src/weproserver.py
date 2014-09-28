@@ -26,12 +26,11 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
                 response.send_headers()
                 yield from response.write_eof()
                 return
-        url = message.path.lstrip('/')
+        url = message.path
         if url.startswith(self.path_prefix):
             url = url[len(self.path_prefix):]
         else:
             return (yield from self.send_404(message, payload, url))
-        print((url, self.path_prefix))
         if not url or url == '/':
             return (yield from self.send_homepage(message, payload))
         elif url == '/about/openwepro.js':
@@ -119,6 +118,8 @@ def start():
     HttpRequestHandler.config = configparser.ConfigParser()
     HttpRequestHandler.config.read('../config.ini')
     HttpRequestHandler.path_prefix = HttpRequestHandler.config.get('basic', 'path_prefix', fallback='').strip('/')
+    if HttpRequestHandler.path_prefix:
+        HttpRequestHandler.path_prefix = '/' + HttpRequestHandler.path_prefix
     HttpRequestHandler.auth_realm = HttpRequestHandler.config.get('basic', 'auth_realm', fallback='OpenWepro').replace('"', "'")
     HttpRequestHandler.auth_passwd = set()
     if 'password' in HttpRequestHandler.config:
