@@ -1,7 +1,7 @@
 (function(window) {
 "use strict";
 
-var urlPrefix = "";
+var urlPrefix = "@path_prefix@";
 var urlMatcher = new RegExp("^(.*?)/(.*?)/:(?:/(.*))?$");
 var urlParsed = urlMatcher.exec(location.pathname.substr(1));
 var targetURL = urlParsed[1] + "://" + urlParsed[2].split("/").reverse().join(".") + "/" + (urlParsed[3] || "");

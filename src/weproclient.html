@@ -11,7 +11,7 @@
 <script language="javascript">
 (function(window) {
 "use strict";
-var urlPrefix = "";
+var urlPrefix = "@path_prefix@";
 document.getElementById("openwepro").addEventListener("submit", function(e) {
     var url = document.getElementById("openwepro_url").value;
     var convURLMatcher = new RegExp("^([^/]*)://(.*?)(?:/(.*))?$");
