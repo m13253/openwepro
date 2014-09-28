@@ -131,7 +131,6 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         conv_url_match = conv_url_matcher.match(url)
         if not conv_url_match: return target
         conv_url_match = conv_url_match.groups()
-        print(conv_url_match)
         return '%s/%s/%s/:/%s' % (self.path_prefix, conv_url_match[0], '/'.join(reversed(conv_url_match[1].split('.'))), conv_url_match[2] or '')
 
 
