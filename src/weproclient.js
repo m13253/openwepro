@@ -12,7 +12,7 @@ function convertURL(url) {
         var convURLParsed = convURLMatcher.exec(url);
         if(!convURLParsed) return url;
         return urlPrefix + "/" + urlParsed[1] + "/" + convURLParsed[1].split(".").reverse().join("/") + "/:/" + (convURLParsed[2] || "");
-     } else if(url.substr(0, 1) == "/") // Relative URL
+    } else if(url.substr(0, 1) == "/") // Relative URL
         return urlPrefix + "/" + urlParsed[1] + "/" + urlParsed[2] + "/:" + url;
     else {
         var convURLMatcher = new RegExp("^(https?)://(.*?)(?:/(.*))?$");
@@ -53,11 +53,18 @@ function injectNode(el) {
             writable: false
         });
         if(el.setAttribute) {
+            var oldGetAttribute = el.getAttribute;
             var oldSetAttribute = el.setAttribute;
+            var oldAttributes = new Object();
+            el.getAttribute = function(attr) {
+                return oldAttributes[attr] || oldGetAttribute.call(el, attr);
+            }
             el.setAttribute = function(attr, value) {
-                if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value"))
-                    return oldSetAttribute.call(el, attr, convertURL(value));
-                else
+                if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
+                    var res = oldSetAttribute.call(el, attr, convertURL(value));
+                    oldAttributes[attr] = value;
+                    return res;
+                } else
                     return oldSetAttribute.call(el, attr, value);
             };
             injectNodeProperty(el, "action");
@@ -108,13 +115,9 @@ document.createElement = function(tagName) {
     return injectNode(oldCreateElement.call(document, tagName));
 };
 
-var oldXMLHttpRequest = window.XMLHttpRequest;
-window.XMLHttpRequest = function() {
-    oldXMLHttpRequest.call(this);
-    var oldOpen = this.open;
-    this.open = function(method, url, async) {
-        return oldOpen.call(this, method, convertURL(url), async);
-    }
+var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function(method, url, async) {
+    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
 };
 
 var oldImage = window.Image;
@@ -126,8 +129,8 @@ window.Image = function() {
 window.Image.__proto__ = oldImage.__proto__;
 
 var oldCookie = document.cookie;
-Object.defineProperty(document, "cookie", { get: function() { return oldCookie; }, set: function() {} );
+Object.defineProperty(document, "cookie", { get: function() { return oldCookie; }, set: function() {} });
 var oldDomain = document.domain;
-Object.defineProperty(document, "domain", { get: function() { return oldDomain; }, set: function() {} );
+Object.defineProperty(document, "domain", { get: function() { return oldDomain; }, set: function() {} });
 
 }(this));

@@ -35,13 +35,10 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             return (yield from self.send_homepage(message, payload))
         elif url == '/about/openwepro.js':
             return (yield from self.send_js(message, payload))
-        url_matcher = re.compile('/(.*?)/(.*?)/:(?:/(.*))?$')
-        url_parsed = url_matcher.match(url)
-        if not url_parsed:
+        target_url = self.parse_url(url, False)
+        if target_url is None:
             return (yield from self.send_404(message, payload, url))
-        url_parsed = url_parsed.groups()
-        if url_parsed[0] in {'http', 'https'}:
-            target_url = '%s://%s/%s' % (url_parsed[0], '.'.join(reversed(url_parsed[1].split('/'))), url_parsed[2] or '')
+        else:
             return (yield from self.do_http_proxy(message, payload, target_url))
         return (yield from self.send_404(message, payload, url))
 
@@ -125,6 +122,16 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         response.send_headers()
         response.write(responseHtml)
         yield from response.write_eof()
+
+
+    def parse_url(self, url, ignore_error=True):
+        url_matcher = re.compile('/(.*?)/(.*?)/:(?:/(.*))?$')
+        url_parsed = url_matcher.match(url)
+        if not url_parsed:
+            return url if ignore_error else None
+        url_parsed = url_parsed.groups()
+        if url_parsed[0] in {'http', 'https'}:
+            return '%s://%s/%s' % (url_parsed[0], '.'.join(reversed(url_parsed[1].split('/'))), url_parsed[2] or '')
 
 
     def convert_url(self, target, base=None):
