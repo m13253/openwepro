@@ -100,7 +100,6 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
                     if not css_conv_match:
                         break
                     css_conv_match = css_conv_match.groups()
-                    print(css_conv_match)
                     response.write(('%surl(%s%s%s)' % (css_conv_match[0], css_conv_match[1], self.convert_url(css_conv_match[2], url), css_conv_match[1])).encode('iso-8859-1', 'replace'))
                     css_conv_left = css_conv_match[3]
         else:
