@@ -125,4 +125,9 @@ window.Image = function() {
 }
 window.Image.__proto__ = oldImage.__proto__;
 
+var oldCookie = document.cookie;
+Object.defineProperty(document, "cookie", { get: function() { return oldCookie; }, set: function() {} );
+var oldDomain = document.domain;
+Object.defineProperty(document, "domain", { get: function() { return oldDomain; }, set: function() {} );
+
 }(this));
