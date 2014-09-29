@@ -76,12 +76,14 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         else:
             x_forwarded_for.append(str(self.writer.get_extra_info('peername')[0]))
         request_headers.append(('X-Forwarded-For', ', '.join(x_forwarded_for)))
-        request = yield from aiohttp.client.request(message.method, url, data=(yield from payload.read()), headers=request_headers, version=message.version, connector=self.upstream_connector)
+        request = yield from aiohttp.client.request(message.method, url, data=(yield from payload.read()), headers=request_headers, allow_redirects=False, version=message.version, connector=self.upstream_connector)
         content_type = request.headers.get('Content-Type', '').split(';', 1)[0]
 
         response = aiohttp.Response(self.writer, request.status, http_version=request.version)
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
         response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-SECURITY-POLICY-REPORT-ONLY', 'CONTENT-LENGTH', 'LOCATION', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
+        if 'Location' in request.headers:
+            response.add_header('Location', self.convert_url(request.headers['Location'], url))
         if 'Content-Encoding' not in request.headers and 'Content-Length' in request.headers and content_type not in {'text/html', 'text/css'}:
             response.add_header('Content-Length', request.headers['Content-Length'])
         response.add_header('Content-Security-Policy', "default-src data: 'self' 'unsafe-inline' 'unsafe-eval'")

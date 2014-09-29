@@ -55,7 +55,7 @@ function injectNode(el) {
         if(el.setAttribute) {
             var oldSetAttribute = el.setAttribute;
             el.setAttribute = function(attr, value) {
-                if(attr === "action" || attr === "href" || attr === "src")
+                if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value"))
                     return oldSetAttribute.call(el, attr, convertURL(value));
                 else
                     return oldSetAttribute.call(el, attr, value);
@@ -63,6 +63,7 @@ function injectNode(el) {
             injectNodeProperty(el, "action");
             injectNodeProperty(el, "href");
             injectNodeProperty(el, "src");
+            injectNodeProperty(el, "value");
         }
         if(el.nodeName === "STYLE" && el.innerHTML.substr(0, 15) !== "/* OpenWepro */")
             el.innerHTML = convertCSS(el.innerHTML);
@@ -111,8 +112,8 @@ var oldXMLHttpRequest = window.XMLHttpRequest;
 window.XMLHttpRequest = function() {
     oldXMLHttpRequest.call(this);
     var oldOpen = this.open;
-    this.open = function(method, url, async, user, password) {
-        return oldOpen.call(this, method, convertURL(url), async, user, password);
+    this.open = function(method, url, async) {
+        return oldOpen.call(this, method, convertURL(url), async);
     }
 };
 
