@@ -23,7 +23,7 @@ function convertURL(url) {
 }
 
 function convertCSS(text) {
-    var convMatcher = new RegExp("^(.*?[\\s:,])url\\s*\\(\\s*([\"']?)(.*?)\\2\\s*\\)(.*)$", "im");
+    var convMatcher = new RegExp("^([\\S\\s]*?[\\s:,])url\\s*\\(\\s*([\"']?)(.*?)\\2\\s*\\)([\\S\\s]*)$", "i");
     var converted = ["/* OpenWepro */\n"];
     var matched;
     while(matched = convMatcher.exec(text)) {
