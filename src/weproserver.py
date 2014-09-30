@@ -78,12 +78,16 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
         response = aiohttp.Response(self.writer, request.status, http_version=request.version)
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
-        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-SECURITY-POLICY-REPORT-ONLY', 'CONTENT-LENGTH', 'LOCATION', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
+        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-SECURITY-POLICY-REPORT-ONLY', 'CONTENT-LENGTH', 'LOCATION', 'ORIGIN', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
         if 'Location' in request.headers:
             response.add_header('Location', self.convert_url(request.headers['Location'], url))
         if 'Content-Encoding' not in request.headers and 'Content-Length' in request.headers and content_type not in {'text/html', 'text/css'}:
             response.add_header('Content-Length', request.headers['Content-Length'])
         response.add_header('Content-Security-Policy', "default-src data: 'self' 'unsafe-inline' 'unsafe-eval'")
+        for cookie_item in request.headers.getall('Set-Cookie', ()):
+            for cookie_converted in self.convert_cookie(cookie_item, url):
+                response.add_header('Set-Cookie', cookie_converted)
+                print('Set-Cookie: %s' % cookie_converted)
         response.send_headers()
         if content_type == 'text/css':
             css_conv_matcher = re.compile('(.*?[\\s:,])url\\s*\\(\\s*(["\']?)(.*?)\\2\\s*\\)(.*)$', re.IGNORECASE | re.DOTALL)
@@ -140,6 +144,47 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         if not conv_url_match: return target
         conv_url_match = conv_url_match.groups()
         return '%s/%s/%s/:/%s' % (self.path_prefix, conv_url_match[0], '/'.join(reversed(conv_url_match[1].split('.'))), conv_url_match[2] or '')
+
+
+    def convert_cookie(self, cookie, url):
+        domain = urllib.parse.urlsplit(url).netloc
+        if not domain:
+            return (cookie,)
+        if '; ' in cookie:
+            cookie_value, cookie_args = cookie.split('; ', 1)
+            cookie_args = cookie_args.split('; ')
+            conv_args = []
+            path = ''
+            secure = False
+            for cookie_arg in cookie_args:
+                cookie_arg_split = cookie_arg.split('=', 1)
+                argname = cookie_arg_split[0].lower()
+                if argname == 'secure':
+                    secure = True
+                elif argname == 'domain' and len(cookie_arg_split) > 1:
+                    domain = cookie_arg_split[1]
+                elif argname == 'path' and len(cookie_arg_split) > 1:
+                    path = cookie_arg_split[1].strip('/')
+                else:
+                    conv_args.append(cookie_arg)
+            if domain.startswith('.'):
+                conv_path = domain.lstrip('.').split('.')
+                conv_path.reverse()
+                conv_path = '/'.join(conv_path)
+            else:
+                conv_path = domain.split('.')
+                conv_path.reverse()
+                conv_path = ('%s/:/%s' % ('/'.join(conv_path), path)).rstrip('/')
+            if secure:
+                return ('%s; %s' % (cookie_value, '; '.join(['path=%s/http/%s' % (self.path_prefix, conv_path)] + conv_args)),)
+            else:
+                return ('%s; %s' % (cookie_value, '; '.join(['path=%s/http/%s' % (self.path_prefix, conv_path)] + conv_args)),
+                        '%s; %s' % (cookie_value, '; '.join(['path=%s/https/%s' % (self.path_prefix, conv_path)] + conv_args)))
+        else:
+            domain = domain.split('.')
+            domain.reverse()
+            return ('%s; path=%s/http/%s/:' % (cookie, self.path_prefix, '/'.join(domain)),
+                    '%s; path=%s/https/%s/:' % (cookie, self.path_prefix, '/'.join(domain)))
 
 
 def start():
