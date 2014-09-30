@@ -35,6 +35,8 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             return (yield from self.send_homepage(message, payload))
         elif url == '/about/openwepro.js':
             return (yield from self.send_js(message, payload))
+        elif url == '/about/empty.js':
+            return (yield from self.send_empty_js(message, payload))
         target_url = self.parse_url(url, False)
         if target_url is None:
             return (yield from self.send_404(message, payload, url))
@@ -60,6 +62,15 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         response.write(self.clientjs)
         yield from response.write_eof()
 
+    @asyncio.coroutine
+    def send_empty_js(self, message, payload):
+        response = aiohttp.Response(self.writer, 200, http_version=message.version)
+        response.add_header('Content-Type', 'text/javascript; charset=utf-8')
+        response.add_header('Content-Length', '0')
+        response.send_headers()
+        yield from response.write_eof()
+
+    @asyncio.coroutine
     @asyncio.coroutine
     def do_http_proxy(self, message, payload, url):
         self.log_proxy.info(url)

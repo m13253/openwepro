@@ -34,6 +34,11 @@ function convertCSS(text) {
     return converted.join("");
 }
 
+var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function(method, url, async) {
+    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
+};
+
 function injectNode(el) {
     function injectNodeProperty(el, prop) {
         if(el.hasAttribute(prop))
@@ -55,17 +60,35 @@ function injectNode(el) {
         if(el.setAttribute) {
             var oldGetAttribute = el.getAttribute;
             var oldSetAttribute = el.setAttribute;
+            var oldRemoveAttribute = el.removeAttribute;
             var oldAttributes = new Object();
             el.getAttribute = function(attr) {
                 return oldAttributes[attr] || oldGetAttribute.call(el, attr);
-            }
+            };
             el.setAttribute = function(attr, value) {
                 if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
-                    var res = oldSetAttribute.call(el, attr, convertURL(value));
                     oldAttributes[attr] = value;
-                    return res;
+                    if(el.nodeName === "SCRIPT" && !el.hasAttribute('async')) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('GET', value, false);
+                        xhr.send(null);
+                        if(!el.hasAttribute('defer')) {
+                            if(xhr.status === 200) {
+                                console.log('Executing ' + value);
+                                window.eval(xhr.responseText);
+                            }
+                            oldSetAttribute.call(el, attr, '/about/empty.js');
+                        } else
+                            oldSetAttribute.call(el, attr, convertURL(value));
+                    } else
+                        oldSetAttribute.call(el, attr, convertURL(value));
+                    return value;
                 } else
                     return oldSetAttribute.call(el, attr, value);
+            };
+            el.removeAttribute = function(attr) {
+                delete oldAttributes[attr];
+                oldRemoveAttribute.call(el, attr);
             };
             injectNodeProperty(el, "action");
             injectNodeProperty(el, "href");
@@ -115,11 +138,6 @@ document.createElement = function(tagName) {
     return injectNode(oldCreateElement.call(document, tagName));
 };
 
-var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
-XMLHttpRequest.prototype.open = function(method, url, async) {
-    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
-};
-
 var oldImage = window.Image;
 window.Image = function() {
     /* Thank you, http://stackoverflow.com/a/13839919/2557927 */
@@ -127,6 +145,13 @@ window.Image = function() {
     return injectNode(new (unbind(oldImage, null).call(null)));
 }
 window.Image.__proto__ = oldImage.__proto__;
+
+var oldWorker = window.Worker;
+window.Worker = function(url) {
+    var unbind = Function.bind.bind(Function.bind);
+    return new (unbind(oldWorker, null).call(null, url));
+}
+window.Worker.__proto__ = oldWorker.__proto__;
 
 var oldCookie = document.cookie;
 Object.defineProperty(document, "cookie", { get: function() { return oldCookie; }, set: function() {} });
