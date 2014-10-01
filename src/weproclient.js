@@ -8,7 +8,7 @@
 var weproAuth = @auth@;
 var weproUser = undefined;
 var weproPass = undefined;
-if(weproAuth && weproAuth.substr(0, 6).toUppwerCase() === 'BASIC ') {
+if(weproAuth && weproAuth.substr(0, 6).toUpperCase() === 'BASIC ') {
     var user_pass = atob(weproAuth.substr(6));
     var delim = user_pass.indexOf(':');
     if(delim !== -1) {
