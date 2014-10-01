@@ -85,15 +85,20 @@ function injectNode(el) {
                     return value;
                 } else if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
                     oldAttributes["attr_" + attr] = value;
-                    if(el.nodeName === "SCRIPT" && !el.hasAttribute("async")) {
+                    if(el.nodeName === "SCRIPT") {
+                        oldSetAttribute.call(el, attr, urlPrefix + "/about/empty.js");
                         var xhr = new XMLHttpRequest();
-                        xhr.open("GET", value, false);
-                        xhr.send(null);
-                        if(!el.hasAttribute("defer") && xhr.status === 200) {
-                            window.eval(xhr.responseText);
-                            oldSetAttribute.call(el, attr, urlPrefix + "/about/empty.js");
-                        } else
+                        xhr.open("GET", value, el.hasAttribute("async"));
+                        xhr.addEventListener("load", function() {
+                            if(!el.hasAttribute("defer") && xhr.status === 200)
+                                window.eval(xhr.responseText);
+                            else
+                                oldSetAttribute.call(el, attr, convertURL(value));
+                        });
+                        xhr.addEventListener("error", function() {
                             oldSetAttribute.call(el, attr, convertURL(value));
+                        });
+                        xhr.send(null);
                     } else
                         oldSetAttribute.call(el, attr, convertURL(value));
                     return value;
