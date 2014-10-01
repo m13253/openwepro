@@ -134,9 +134,10 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
                 html_head_split = html_head_match.span()[1]
                 if html_head_split:
                     response.write(data[:html_head_split])
+                    data = data[html_head_split:]
             response.write(('\r\n<!-- OpenWepro --><script language="javascript" src="%s/about/openwepro.js?v=%s"></script><!-- /OpenWepro -->\r\n' % (self.path_prefix, self.instance_id)).encode('utf-8', 'replace'))
-            if html_head_match and html_head_split != len(data):
-                response.write(data[html_head_split:])
+            if data:
+                response.write(data)
             while True:
                 data = yield from request.content.read(1024)
                 if not data:
