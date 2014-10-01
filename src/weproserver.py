@@ -131,7 +131,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             html_head = re.compile('<head(?:\\s+[^ >]+(?:|="[^"]*"|=[^ >]*))*\\s*>', re.IGNORECASE)
             html_head_match = html_head.search(data.decode('iso-8859-1'))
             if html_head_match:
-                html_head_split = sum(html_head_match.span())
+                html_head_split = html_head_match.span()[1]
                 if html_head_split:
                     response.write(data[:html_head_split])
             response.write(('\r\n<!-- OpenWepro --><script language="javascript" src="%s/about/openwepro.js?v=%s"></script><!-- /OpenWepro -->\r\n' % (self.path_prefix, self.instance_id)).encode('utf-8', 'replace'))
