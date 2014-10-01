@@ -126,9 +126,23 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
                     css_conv_match = css_conv_match.groups()
                     response.write(('%surl(%s%s%s)' % (css_conv_match[0], css_conv_match[1], self.convert_url(css_conv_match[2], url), css_conv_match[1])).encode('iso-8859-1', 'replace'))
                     css_conv_left = css_conv_match[3]
+        elif content_type == 'text/html':
+            data = yield from request.content.read(4096)
+            html_head = re.compile('<head(?:\\s+[^ >]+(?:|="[^"]*"|=[^ >]*))*\\s*>', re.IGNORECASE)
+            html_head_match = html_head.search(data.decode('iso-8859-1'))
+            if html_head_match:
+                html_head_split = sum(html_head_match.span())
+                if html_head_split:
+                    response.write(data[:html_head_split])
+            response.write(('\r\n<!-- OpenWepro --><script language="javascript" src="%s/about/openwepro.js?v=%s"></script><!-- /OpenWepro -->\r\n' % (self.path_prefix, self.instance_id)).encode('utf-8', 'replace'))
+            if html_head_match and html_head_split != len(data):
+                response.write(data[html_head_split:])
+            while True:
+                data = yield from request.content.read(1024)
+                if not data:
+                    break
+                response.write(data)
         else:
-            if content_type == 'text/html':
-                response.write(('<script language="javascript" src="%s/about/openwepro.js?v=%s"></script><!-- OpenWepro -->\r\n' % (self.path_prefix, self.instance_id)).encode('utf-8', 'replace'))
             while True:
                 data = yield from request.content.read(1024)
                 if not data:
