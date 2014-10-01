@@ -128,7 +128,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
                     css_conv_left = css_conv_match[3]
         else:
             if content_type == 'text/html':
-                response.write(b''.join((b'<script language="javascript" src="/about/openwepro.js?v=', self.instance_id, b'"></script><!-- OpenWepro -->\r\n')))
+                response.write(('<script language="javascript" src="%s/about/openwepro.js?v=%s"></script><!-- OpenWepro -->\r\n' % (self.path_prefix, self.instance_id)).encode('utf-8', 'replace'))
             while True:
                 data = yield from request.content.read(1024)
                 if not data:
