@@ -67,11 +67,11 @@ function injectNode(el) {
             var oldRemoveAttribute = el.removeAttribute;
             var oldAttributes = new Object();
             el.getAttribute = function(attr) {
-                return oldAttributes[attr] || oldGetAttribute.call(el, attr);
+                return oldAttributes["attr_" + attr] || oldGetAttribute.call(el, attr);
             };
             el.setAttribute = function(attr, value) {
                 if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
-                    oldAttributes[attr] = value;
+                    oldAttributes["attr_" + attr] = value;
                     if(el.nodeName === "SCRIPT" && !el.hasAttribute('async')) {
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', value, false);
@@ -88,7 +88,7 @@ function injectNode(el) {
                     return oldSetAttribute.call(el, attr, value);
             };
             el.removeAttribute = function(attr) {
-                delete oldAttributes[attr];
+                delete oldAttributes["attr_" + attr];
                 oldRemoveAttribute.call(el, attr);
             };
             injectNodeProperty(el, "action");
