@@ -72,7 +72,9 @@ function injectNode(el) {
                 return oldAttributes["attr_" + attr] || oldGetAttribute.call(el, attr);
             };
             el.setAttribute = function(attr, value) {
-                if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
+                if(attr === "crossoigin")
+                    return (oldAttributes["attr_crossorigin"] = value);
+                else if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
                     oldAttributes["attr_" + attr] = value;
                     if(el.nodeName === "SCRIPT" && !el.hasAttribute("async")) {
                         var xhr = new XMLHttpRequest();
@@ -94,6 +96,7 @@ function injectNode(el) {
                 oldRemoveAttribute.call(el, attr);
             };
             injectNodeProperty(el, "action");
+            injectNodeProperty(el, "crossorigin");
             injectNodeProperty(el, "href");
             injectNodeProperty(el, "src");
             injectNodeProperty(el, "value");
