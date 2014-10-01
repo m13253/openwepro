@@ -56,6 +56,13 @@ var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
     return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async, weproUser, weproPass);
 };
+if(weproAuth) {
+    var oldXMLHttpRequestSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function(data) {
+        this.setRequestHeader("Authorization", weproAuth);
+        return oldXMLHttpRequestSend.call(this, data);
+    };
+}
 
 function injectNode(el) {
     function injectNodeProperty(el, prop) {
