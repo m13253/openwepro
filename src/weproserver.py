@@ -93,7 +93,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         else:
             x_forwarded_for.append(str(self.writer.get_extra_info('peername')[0]))
         request_headers.append(('X-Forwarded-For', ', '.join(x_forwarded_for)))
-        request_headers.append(('Via', 'OpenWepro (like Glype, +https://github.com/m13253/openwepro)'))
+        request_headers.append(('Via', 'OpenWepro (like CGIProxy, +https://github.com/m13253/openwepro)'))
         request = yield from aiohttp.client.request(message.method, url, data=(yield from payload.read()), headers=request_headers, allow_redirects=False, version=message.version, connector=self.upstream_connector)
         content_type = request.headers.get('Content-Type', '').split(';', 1)[0]
 
