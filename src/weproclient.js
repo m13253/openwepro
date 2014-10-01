@@ -52,7 +52,7 @@ function injectNode(el) {
         Object.defineProperty(el, prop, {
             configurable: true,
             enumerable: true,
-            get: function() { return el.getAttribute(prop); },
+            get: function() { return el.hasAttribute(prop) ? el.getAttribute(prop) : undefined; },
             set: function(value) { el.setAttribute(prop, value); return value; }
         });
     }
@@ -65,11 +65,15 @@ function injectNode(el) {
         });
         if(el.setAttribute) {
             var oldGetAttribute = el.getAttribute;
+            var oldHasAttribute = el.hasAttribute;
             var oldSetAttribute = el.setAttribute;
             var oldRemoveAttribute = el.removeAttribute;
             var oldAttributes = new Object();
             el.getAttribute = function(attr) {
                 return oldAttributes["attr_" + attr] || oldGetAttribute.call(el, attr);
+            };
+            el.hasAttribute = function(attr) {
+                return (("attr_" + attr) in oldAttributes) || oldHasAttribute.call(el, attr);
             };
             el.setAttribute = function(attr, value) {
                 if(attr === "crossorigin") {
