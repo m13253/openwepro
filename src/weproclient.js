@@ -24,6 +24,9 @@ if(!urlParsed)
     throw "Can not parse URL: " + location.pathname;
 var targetURL = urlParsed[1] + "://" + urlParsed[2].split("/").reverse().join(".") + "/" + (urlParsed[3] || "");
 
+if(weproUser && weproPass) /* I think it is a browser bug, fix it. */
+    urlPrefix = "//" + encodeURIComponent(weproUser) + ":" + encodeURIComponent(weproPass) + "@" + location.host + urlPrefix;
+
 function convertURL(url) {
     if(url.substr(0, 2) == "//") { // Protocol relative URL
         var convURLMatcher = new RegExp("^//(.*?)(?:/(.*))?$");
