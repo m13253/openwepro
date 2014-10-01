@@ -6,6 +6,7 @@ import re
 import time
 import urllib.parse
 import urllib.request
+import uuid
 import aiohttp
 import aiohttp.client
 import aiohttp.connector
@@ -33,10 +34,10 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
             return (yield from self.send_404(message, payload, url))
         if not url or url == '/':
             return (yield from self.send_homepage(message, payload))
-        elif url == '/about/openwepro.js':
-            return (yield from self.send_js(message, payload))
         elif url == '/about/empty.js':
             return (yield from self.send_empty_js(message, payload))
+        elif url.startswith('/about/openwepro.js?'):
+            return (yield from self.send_js(message, payload))
         target_url = self.parse_url(url, False)
         if target_url is None:
             return (yield from self.send_404(message, payload, url))
@@ -56,6 +57,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
     @asyncio.coroutine
     def send_js(self, message, payload):
         response = aiohttp.Response(self.writer, 200, http_version=message.version)
+        response.add_header('Cache-Control', 'max-age=604800')
         response.add_header('Content-Type', 'text/javascript; charset=utf-8')
         response.add_header('Content-Length', str(len(self.clientjs)))
         response.send_headers()
@@ -120,7 +122,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
                     css_conv_left = css_conv_match[3]
         else:
             if content_type == 'text/html':
-                response.write(b'<script language="javascript" src="/about/openwepro.js"></script><!-- OpenWepro -->\r\n')
+                response.write(b''.join((b'<script language="javascript" src="/about/openwepro.js?v=', self.instance_id, b'"></script><!-- OpenWepro -->\r\n')))
             while True:
                 data = yield from request.content.read(1024)
                 if not data:
@@ -200,6 +202,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
 
 def start():
+    HttpRequestHandler.instance_id = str(uuid.uuid4()).encode('iso-8859-1')
     HttpRequestHandler.config = configparser.ConfigParser()
     HttpRequestHandler.config.read('../config.ini')
     HttpRequestHandler.path_prefix = HttpRequestHandler.config.get('basic', 'path_prefix', fallback='').strip('/')
