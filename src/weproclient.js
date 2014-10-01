@@ -79,8 +79,8 @@ function injectNode(el) {
                         xhr.open("GET", value, false);
                         xhr.send(null);
                         if(!el.hasAttribute("defer") && xhr.status === 200) {
-                                window.eval(xhr.responseText);
-                                oldSetAttribute.call(el, attr, urlPrefix + "/about/empty.js");
+                            window.eval(xhr.responseText);
+                            oldSetAttribute.call(el, attr, urlPrefix + "/about/empty.js");
                         } else
                             oldSetAttribute.call(el, attr, convertURL(value));
                     } else
