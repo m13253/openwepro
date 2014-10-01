@@ -72,13 +72,13 @@ function injectNode(el) {
             el.setAttribute = function(attr, value) {
                 if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
                     oldAttributes["attr_" + attr] = value;
-                    if(el.nodeName === "SCRIPT" && !el.hasAttribute('async')) {
+                    if(el.nodeName === "SCRIPT" && !el.hasAttribute("async")) {
                         var xhr = new XMLHttpRequest();
-                        xhr.open('GET', value, false);
+                        xhr.open("GET", value, false);
                         xhr.send(null);
-                        if(!el.hasAttribute('defer') && xhr.status === 200) {
+                        if(!el.hasAttribute("defer") && xhr.status === 200) {
                                 window.eval(xhr.responseText);
-                                oldSetAttribute.call(el, attr, '/about/empty.js');
+                                oldSetAttribute.call(el, attr, url_prefix + "/about/empty.js");
                         } else
                             oldSetAttribute.call(el, attr, convertURL(value));
                     } else
