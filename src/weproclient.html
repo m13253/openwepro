@@ -8,6 +8,16 @@
 <input id="openwepro_url" value="https://github.com/m13253/openwepro" style="font-size: 200%; width: 75%" />
 <input type="submit" value="Go!" style="font-size: 200%" />
 </form>
+<hr />
+<p>This web proxy server is built up with technology powered by <a href="https://github.com/m13253/openwepro">OpenWepro</a>.</p>
+<p>OpenWepro is a free and open source software released under GPL 3 license. You can also set up one and share it among your friends!</p>
+<p>Note:</p>
+<ul>
+<li>OpenWepro is not perfect. Not every web page can be displayed correctly.</li>
+<li>Never connect to untrusted servers, because the server has the ability to modify your data even with HTTPS encryption.</li>
+<li>Never try to access confidential data with OpenWepro.</li>
+<li>Sometimes links do not work, try right-clicking to open them in new windows.</li>
+</ul>
 <script language="javascript">
 (function(window) {
 "use strict";
@@ -25,6 +35,13 @@ document.getElementById("openwepro").addEventListener("submit", function(e) {
     location.href = urlPrefix + "/" + convURLParsed[1] + "/" + convURLParsed[2].split(".").reverse().join("/") + "/:/" + (convURLParsed[3] || "");
     e.preventDefault();
 });
+if(window.location.protocol === "http:") {
+    var el = document.createElement("p");
+    el.style.color = "red";
+    el.style.fontSize = "200%";
+    el.innerText = "Error: Failed to build a secure (HTTPS) connection to OpenWepro server. Your data might be intercepted by your Internet provider.";
+    document.body.appendChild(el);
+}
 }(this));
 </script>
 </body>
