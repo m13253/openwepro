@@ -5,6 +5,18 @@
 (function(window) {
 "use strict";
 
+var weproAuth = @auth@;
+var weproUser = undefined;
+var weproPass = undefined;
+if(weproAuth && weproAuth.substr(0, 6).toUppwerCase() === 'BASIC ') {
+    var user_pass = atob(weproAuth.substr(6));
+    var delim = user_pass.indexOf(':');
+    if(delim !== -1) {
+        weproUser = user_pass.substr(0, delim);
+        weproPass = user_pass.substr(delim+1);
+    }
+}
+
 var urlPrefix = "@path_prefix@";
 var urlMatcher = new RegExp("^/(.*?)/(.*?)/:(?:/(.*))?$");
 var urlParsed = urlMatcher.exec(location.pathname.substr(urlPrefix.length));
@@ -41,8 +53,8 @@ function convertCSS(text) {
 }
 
 var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
-XMLHttpRequest.prototype.open = function(method, url, async) {
-    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
+XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async, weproUser, weproPass);
 };
 
 function injectNode(el) {
@@ -75,7 +87,7 @@ function injectNode(el) {
                 if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
                     oldAttributes["attr_" + attr] = value;
                     if(el.nodeName === "SCRIPT" && !el.hasAttribute("async")) {
-                        var xhr = new XMLHttpRequest();
+                        var xhr = new window.XMLHttpRequest();
                         xhr.open("GET", value, false);
                         xhr.send(null);
                         if(!el.hasAttribute("defer") && xhr.status === 200) {

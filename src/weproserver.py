@@ -4,6 +4,7 @@
 import asyncio
 import base64
 import configparser
+import json
 import logging
 import re
 import time
@@ -59,12 +60,13 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
     @asyncio.coroutine
     def send_js(self, message, payload):
+        clientjs = self.clientjs.replace(b'@auth@', json.dumps(message.headers.get('AUTHORIZATION')).encode('utf-8', 'replace'))
         response = aiohttp.Response(self.writer, 200, http_version=message.version)
         response.add_header('Cache-Control', 'max-age=600')
         response.add_header('Content-Type', 'text/javascript; charset=utf-8')
-        response.add_header('Content-Length', str(len(self.clientjs)))
+        response.add_header('Content-Length', str(len(clientjs)))
         response.send_headers()
-        response.write(self.clientjs)
+        response.write(clientjs)
         yield from response.write_eof()
 
     @asyncio.coroutine
@@ -208,7 +210,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
 
 def start():
-    HttpRequestHandler.instance_id = str(uuid.uuid4()).encode('iso-8859-1')
+    HttpRequestHandler.instance_id = str(uuid.uuid4())
     HttpRequestHandler.config = configparser.ConfigParser()
     HttpRequestHandler.config.read('../config.ini')
     HttpRequestHandler.path_prefix = HttpRequestHandler.config.get('basic', 'path_prefix', fallback='').strip('/')
