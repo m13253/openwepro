@@ -60,7 +60,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
     @asyncio.coroutine
     def send_js(self, message, payload):
         response = aiohttp.Response(self.writer, 200, http_version=message.version)
-        response.add_header('Cache-Control', 'max-age=604800')
+        response.add_header('Cache-Control', 'max-age=600')
         response.add_header('Content-Type', 'text/javascript; charset=utf-8')
         response.add_header('Content-Length', str(len(self.clientjs)))
         response.send_headers()
