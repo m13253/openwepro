@@ -74,7 +74,9 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
     @asyncio.coroutine
     def do_http_proxy(self, message, payload, url):
         self.log_proxy.info(url)
-        request_headers = [(k, v) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'AUTHORIZATION', 'HOST', 'REFERER', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
+        request_headers = [(k, v) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'AUTHORIZATION', 'HOST', 'ORIGIN', 'REFERER', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
+        if 'Referer' in message.headers:
+            request_headers.append(('Referer', self.parse_url(message.headers.get('Referer')))
         if 'X-Forwarded-For' in message.headers:
             x_forwarded_for = list(map(str.strip, message.headers.get('X-Forwarded-For', '').split(',')))
         else:
@@ -89,7 +91,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
         response = aiohttp.Response(self.writer, request.status, http_version=request.version)
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
-        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-SECURITY-POLICY-REPORT-ONLY', 'CONTENT-LENGTH', 'LOCATION', 'ORIGIN', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
+        response.add_headers(*[(k, v) for k, v in request.headers.items() if k.upper() not in {'ACCESS-CONTROL-ALLOW-ORIGIN', 'CONTENT-ENCODING', 'CONTENT-SECURITY-POLICY', 'CONTENT-SECURITY-POLICY-REPORT-ONLY', 'CONTENT-LENGTH', 'LOCATION', 'P3P', 'SET-COOKIE', 'STRICT-TRANSPORT-SECURITY', 'TRANSFER-ENCODING', 'X-WEBKIT-CSP', 'X-CONTENT-SECURITY-POLICY'}])
         if 'Location' in request.headers:
             response.add_header('Location', self.convert_url(request.headers['Location'], url))
         if 'Content-Encoding' not in request.headers and 'Content-Length' in request.headers and content_type not in {'text/html', 'text/css'}:
