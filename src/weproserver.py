@@ -1,3 +1,6 @@
+# This file is part of OpenWepro project, and is released under GPL 3 license.
+# You can obtain full source code along with license text at https://github.com/m13253/openwepro
+
 import asyncio
 import base64
 import configparser
