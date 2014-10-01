@@ -100,7 +100,6 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         for cookie_item in request.headers.getall('Set-Cookie', ()):
             for cookie_converted in self.convert_cookie(cookie_item, url):
                 response.add_header('Set-Cookie', cookie_converted)
-                print('Set-Cookie: %s' % cookie_converted)
         response.send_headers()
         if content_type == 'text/css':
             css_conv_matcher = re.compile('(.*?[\\s:,])url\\s*\\(\\s*(["\']?)(.*?)\\2\\s*\\)(.*)$', re.IGNORECASE | re.DOTALL)

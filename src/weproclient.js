@@ -72,12 +72,9 @@ function injectNode(el) {
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', value, false);
                         xhr.send(null);
-                        if(!el.hasAttribute('defer')) {
-                            if(xhr.status === 200) {
-                                console.log('Executing ' + value);
+                        if(!el.hasAttribute('defer') && xhr.status === 200) {
                                 window.eval(xhr.responseText);
-                            }
-                            oldSetAttribute.call(el, attr, '/about/empty.js');
+                                oldSetAttribute.call(el, attr, '/about/empty.js');
                         } else
                             oldSetAttribute.call(el, attr, convertURL(value));
                     } else
