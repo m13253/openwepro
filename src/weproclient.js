@@ -80,7 +80,7 @@ function injectNode(el) {
                         xhr.send(null);
                         if(!el.hasAttribute("defer") && xhr.status === 200) {
                                 window.eval(xhr.responseText);
-                                oldSetAttribute.call(el, attr, url_prefix + "/about/empty.js");
+                                oldSetAttribute.call(el, attr, urlPrefix + "/about/empty.js");
                         } else
                             oldSetAttribute.call(el, attr, convertURL(value));
                     } else
