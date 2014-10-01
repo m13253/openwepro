@@ -72,9 +72,14 @@ function injectNode(el) {
                 return oldAttributes["attr_" + attr] || oldGetAttribute.call(el, attr);
             };
             el.setAttribute = function(attr, value) {
-                if(attr === "crossoigin")
-                    return (oldAttributes["attr_crossorigin"] = value);
-                else if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
+                if(attr === "crossorigin") {
+                    if(value === "anonymous") {
+                        oldAttributes["attr_crossorigin"] = value;
+                        oldRemoveAttribute.call(el, attr);
+                    } else
+                        oldSetAttribute.call(el, attr, value);
+                    return value;
+                } else if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
                     oldAttributes["attr_" + attr] = value;
                     if(el.nodeName === "SCRIPT" && !el.hasAttribute("async")) {
                         var xhr = new XMLHttpRequest();
