@@ -208,7 +208,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
 
 
 def start():
-    HttpRequestHandler.instance_id = str(uuid.uuid4()).encode('iso-8859-1')
+    HttpRequestHandler.instance_id = str(uuid.uuid4())
     HttpRequestHandler.config = configparser.ConfigParser()
     HttpRequestHandler.config.read('../config.ini')
     HttpRequestHandler.path_prefix = HttpRequestHandler.config.get('basic', 'path_prefix', fallback='').strip('/')
