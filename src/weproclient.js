@@ -28,6 +28,72 @@ function convertURL(url) {
     }
 }
 
+var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
+XMLHttpRequest.prototype.open = function(method, url, async) {
+    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
+};
+
+var oldGetAttribute = Element.prototype.getAttribute;
+var oldHasAttribute = Element.prototype.hasAttribute;
+var oldSetAttribute = Element.prototype.setAttribute;
+var oldRemoveAttribute = Element.prototype.removeAttribute;
+Element.prototype.getAttribute = function(attr) {
+    if(this._weproAttributes)
+        return this._weproAttributes["attr_" + attr] || oldGetAttribute.call(this, attr);
+    else
+        return oldGetAttribute.call(this, attr);
+};
+Element.prototype.hasAttribute = function(attr) {
+    return (this._weproAttributes && (("attr_" + attr) in this._weproAttributes)) || oldHasAttribute.call(this, attr);
+};
+Element.prototype.setAttribute = function(attr, value) {
+    if(!this._weproAttributes)
+        this._weproAttributes = new Object();
+    if(attr === "crossorigin") {
+        if(value === "anonymous") {
+            this._weproAttributes["attr_crossorigin"] = value;
+            oldRemoveAttribute.call(this, attr);
+        } else
+            oldSetAttribute.call(this, attr, value);
+        return value;
+    } else if(attr === "action" || attr === "href" || attr === "src" || (this.nodeName === "PARAM" && this.name === "movie" && attr === "value")) {
+        this._weproAttributes["attr_" + attr] = value;
+        if(this.nodeName === "SCRIPT") {
+            oldSetAttribute.call(this, attr, urlPrefix + "/about/empty.js");
+            var el = this;
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", value, this.hasAttribute("async"));
+            xhr.addEventListener("load", function() {
+                if(!el.hasAttribute("defer") && xhr.status === 200)
+                    window.eval("/* " + value.replace('*/', '%2a/') + " */\n" + xhr.responseText);
+                else
+                    oldSetAttribute.call(el, attr, convertURL(value));
+            });
+            xhr.addEventListener("error", function() {
+                oldSetAttribute.call(el, attr, convertURL(value));
+            });
+            xhr.send(null);
+        } else
+            oldSetAttribute.call(this, attr, convertURL(value));
+        return value;
+    } else
+        return oldSetAttribute.call(this, attr, value);
+};
+Element.prototype.removeAttribute = function(attr) {
+    delete this._weproAttributes["attr_" + attr];
+    oldRemoveAttribute.call(this, attr);
+};
+function injectElementProperty(prop) {
+    return Object.defineProperty(Element.prototype, prop, {
+        configurable: true,
+        enumerable: true,
+        get: function() { return this.hasAttribute(prop) ? this.getAttribute(prop) : undefined; },
+        set: function(value) { this.setAttribute(prop, value); return value; }
+    });
+}
+var attrToInject = ["action", "crossorigin", "href", "src", "value"];
+attrToInject.forEach(injectElementProperty);
+
 function convertCSS(text) {
     var convMatcher = new RegExp("^([\\S\\s]*?[\\s:,])url\\s*\\(\\s*([\"']?)(.*?)\\2\\s*\\)([\\S\\s]*)$", "i");
     var converted = ["/* OpenWepro */\n"];
@@ -40,22 +106,7 @@ function convertCSS(text) {
     return converted.join("");
 }
 
-var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
-XMLHttpRequest.prototype.open = function(method, url, async) {
-    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
-};
-
 function injectNode(el) {
-    function injectNodeProperty(el, prop) {
-        if(el.hasAttribute(prop))
-            el.setAttribute(prop, el.getAttribute(prop));
-        Object.defineProperty(el, prop, {
-            configurable: true,
-            enumerable: true,
-            get: function() { return el.hasAttribute(prop) ? el.getAttribute(prop) : undefined; },
-            set: function(value) { el.setAttribute(prop, value); return value; }
-        });
-    }
     if(!el._OpenWeproInjected) {
         Object.defineProperty(el, "_OpenWeproInjected", {
             configurable: false,
@@ -63,58 +114,10 @@ function injectNode(el) {
             value: true,
             writable: false
         });
-        if(el.setAttribute) {
-            var oldGetAttribute = el.getAttribute;
-            var oldHasAttribute = el.hasAttribute;
-            var oldSetAttribute = el.setAttribute;
-            var oldRemoveAttribute = el.removeAttribute;
-            var oldAttributes = new Object();
-            el.getAttribute = function(attr) {
-                return oldAttributes["attr_" + attr] || oldGetAttribute.call(el, attr);
-            };
-            el.hasAttribute = function(attr) {
-                return (("attr_" + attr) in oldAttributes) || oldHasAttribute.call(el, attr);
-            };
-            el.setAttribute = function(attr, value) {
-                if(attr === "crossorigin") {
-                    if(value === "anonymous") {
-                        oldAttributes["attr_crossorigin"] = value;
-                        oldRemoveAttribute.call(el, attr);
-                    } else
-                        oldSetAttribute.call(el, attr, value);
-                    return value;
-                } else if(attr === "action" || attr === "href" || attr === "src" || (el.nodeName === "PARAM" && el.name === "movie" && attr === "value")) {
-                    oldAttributes["attr_" + attr] = value;
-                    if(el.nodeName === "SCRIPT") {
-                        oldSetAttribute.call(el, attr, urlPrefix + "/about/empty.js");
-                        var xhr = new XMLHttpRequest();
-                        xhr.open("GET", value, el.hasAttribute("async"));
-                        xhr.addEventListener("load", function() {
-                            if(!el.hasAttribute("defer") && xhr.status === 200)
-                                window.eval(xhr.responseText);
-                            else
-                                oldSetAttribute.call(el, attr, convertURL(value));
-                        });
-                        xhr.addEventListener("error", function() {
-                            oldSetAttribute.call(el, attr, convertURL(value));
-                        });
-                        xhr.send(null);
-                    } else
-                        oldSetAttribute.call(el, attr, convertURL(value));
-                    return value;
-                } else
-                    return oldSetAttribute.call(el, attr, value);
-            };
-            el.removeAttribute = function(attr) {
-                delete oldAttributes["attr_" + attr];
-                oldRemoveAttribute.call(el, attr);
-            };
-            injectNodeProperty(el, "action");
-            injectNodeProperty(el, "crossorigin");
-            injectNodeProperty(el, "href");
-            injectNodeProperty(el, "src");
-            injectNodeProperty(el, "value");
-        }
+        attrToInject.forEach(function(attr) {
+            if(el.hasAttribute && el.hasAttribute(attr))
+                el.setAttribute(attr, el.getAttribute(attr));
+        });
         if(el.nodeName === "STYLE" && el.innerHTML.substr(0, 15) !== "/* OpenWepro */")
             el.innerHTML = convertCSS(el.innerHTML);
         if(el.hasAttribute && el.hasAttribute("style")) {
@@ -153,21 +156,9 @@ var observerConfig = {
 };
 observer.observe(document.documentElement, observerConfig);
 
-var oldCreateElement = document.createElement;
-document.createElement = function(tagName) {
-    return injectNode(oldCreateElement.call(document, tagName));
-};
-
-var oldImage = window.Image;
-window.Image = function() {
-    /* Thank you, http://stackoverflow.com/a/13839919/2557927 */
-    var unbind = Function.bind.bind(Function.bind);
-    return injectNode(new (unbind(oldImage, null).call(null)));
-}
-window.Image.__proto__ = oldImage.__proto__;
-
 var oldWorker = window.Worker;
 window.Worker = function(url) {
+    /* Thank you, http://stackoverflow.com/a/13839919/2557927 */
     var unbind = Function.bind.bind(Function.bind);
     return new (unbind(oldWorker, null).call(null, url));
 }
