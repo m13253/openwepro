@@ -92,7 +92,14 @@ Element.prototype.setAttribute = function(attr, value) {
             xhr.open("GET", value, this.hasAttribute("async"));
             xhr.addEventListener("load", function() {
                 if(!el.hasAttribute("defer") && xhr.status === 200)
-                    window.eval("/* " + value.replace('*/', '%2a/') + " */\n" + xhr.responseText);
+                    try {
+                        window.eval("/* " + value.replace('*/', '%2a/') + " */\n" + xhr.responseText);
+                    } catch(e) {
+                        if(e.message && e.stack)
+                            console.error(e.message + "\n\n" + e.stack);
+                        else
+                            console.error(e);
+                    }
                 else
                     oldSetAttribute.call(el, attr, convertURL(value));
             });
