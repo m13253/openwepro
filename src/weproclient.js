@@ -73,7 +73,7 @@ Element.prototype.hasAttribute = function(attr) {
     return "attr_" + attr in this._OpenWeproAttributes || oldHasAttribute.call(this, attr);
 };
 Element.prototype.setAttribute = function(attr, value) {
-    console.log(this.nodeName.toLowerCase() + "." + attr + " = " + value);
+    /* console.log(this.nodeName.toLowerCase() + "." + attr + " = " + value); */
     if(attr === "crossorigin") {
         if(value === "anonymous") {
             this._OpenWeproAttributes["attr_crossorigin"] = value;
