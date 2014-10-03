@@ -28,36 +28,62 @@ function convertURL(url) {
     }
 }
 
+function convertCSS(text) {
+    var convMatcher = new RegExp("^([\\S\\s]*?[\\s:,])url\\s*\\(\\s*([\"']?)(.*?)\\2\\s*\\)([\\S\\s]*)$", "i");
+    var converted = ["/* OpenWepro */\n"];
+    var matched;
+    while(matched = convMatcher.exec(text)) {
+        converted.push(matched[1] + "url(" + matched[2] + convertURL(matched[3]) + matched[2] + ")");
+        text = matched[4];
+    }
+    converted.push(text);
+    return converted.join("");
+}
+
 var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open = function(method, url, async) {
     return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
 };
 
+var attrToInject = ["action", "crossorigin", "href", "src", "style", "value"];
 var oldGetAttribute = Element.prototype.getAttribute;
 var oldHasAttribute = Element.prototype.hasAttribute;
 var oldSetAttribute = Element.prototype.setAttribute;
 var oldRemoveAttribute = Element.prototype.removeAttribute;
+Object.defineProperty(Element.prototype, "_OpenWeproAttributes", {
+    configurable: false,
+    enumerable: false,
+    get: function() {
+        if(!this.__OpenWeproAttributes)
+            Object.defineProperty(this, "__OpenWeproAttributes", {
+                configurable: false,
+                enumerable: false,
+                value: new Object()
+            });
+        return this.__OpenWeproAttributes;
+    },
+    set: function(value) {
+        throw "Can not write read-only property _OpenWeproAttributes";
+    }
+});
 Element.prototype.getAttribute = function(attr) {
-    if(this._OpenweproAttributes)
-        return this._OpenweproAttributes["attr_" + attr] || oldGetAttribute.call(this, attr);
-    else
-        return oldGetAttribute.call(this, attr);
+    return this._OpenWeproAttributes["attr_" + attr] || oldGetAttribute.call(this, attr);
 };
 Element.prototype.hasAttribute = function(attr) {
-    return (this._OpenweproAttributes && (("attr_" + attr) in this._OpenweproAttributes)) || oldHasAttribute.call(this, attr);
+    return "attr_" + attr in this._OpenWeproAttributes || oldHasAttribute.call(this, attr);
 };
 Element.prototype.setAttribute = function(attr, value) {
-    if(!this._OpenweproAttributes)
-        this._OpenweproAttributes = new Object();
     if(attr === "crossorigin") {
         if(value === "anonymous") {
-            this._OpenweproAttributes["attr_crossorigin"] = value;
+            this._OpenWeproAttributes["attr_crossorigin"] = value;
             oldRemoveAttribute.call(this, attr);
         } else
             oldSetAttribute.call(this, attr, value);
-        return value;
-    } else if(attr === "action" || attr === "href" || attr === "src" || (this.nodeName === "PARAM" && this.name === "movie" && attr === "value")) {
-        this._OpenweproAttributes["attr_" + attr] = value;
+    } else if(attr === "style") {
+        this._OpenWeproAttributes["attr_style"] = value;
+        oldSetAttribute.call(this, attr, convertCSS(value));
+    } else if(attr === "action" || attr === "href" || attr === "src") {
+        this._OpenWeproAttributes["attr_" + attr] = value;
         if(this.nodeName === "SCRIPT") {
             oldSetAttribute.call(this, attr, urlPrefix + "/about/empty.js");
             var el = this;
@@ -75,12 +101,15 @@ Element.prototype.setAttribute = function(attr, value) {
             xhr.send(null);
         } else
             oldSetAttribute.call(this, attr, convertURL(value));
-        return value;
+    } else if(attr === "value") {
+        this._OpenWeproAttributes["attr_" + attr] = value;
+        oldSetAttribute.call(this, attr, this.nodeName === "PARAM" && this.name === "movie" ? convertURL(value) : value);
     } else
         return oldSetAttribute.call(this, attr, value);
+    return value;
 };
 Element.prototype.removeAttribute = function(attr) {
-    delete this._OpenweproAttributes["attr_" + attr];
+    delete this._OpenWeproAttributes["attr_" + attr];
     oldRemoveAttribute.call(this, attr);
 };
 function injectElementProperty(prop) {
@@ -91,60 +120,39 @@ function injectElementProperty(prop) {
         set: function(value) { this.setAttribute(prop, value); return value; }
     });
 }
-var attrToInject = ["action", "crossorigin", "href", "src", "value"];
 attrToInject.forEach(injectElementProperty);
 
-function convertCSS(text) {
-    var convMatcher = new RegExp("^([\\S\\s]*?[\\s:,])url\\s*\\(\\s*([\"']?)(.*?)\\2\\s*\\)([\\S\\s]*)$", "i");
-    var converted = ["/* OpenWepro */\n"];
-    var matched;
-    while(matched = convMatcher.exec(text)) {
-        converted.push(matched[1] + "url(" + matched[2] + convertURL(matched[3]) + matched[2] + ")");
-        text = matched[4];
-    }
-    converted.push(text);
-    return converted.join("");
+function updateElementAttribute(el, attr) {
+    console.log("Update: " + el.nodeName + "." + attr);
+    if(el._OpenWeproAttributes && !("attr_" + attr in el._OpenWeproAttributes) && el.hasAttribute && el.hasAttribute(attr))
+        el.setAttribute(attr, el.getAttribute(attr));
+}
+
+function updateElementAttributes(el) {
+    if(el._OpenWeproAttributes)
+        attrToInject.forEach(function(attr) {
+            updateElementAttribute(el, attr);
+        });
 }
 
 function injectNode(el) {
-    if(!el._OpenWeproInjected) {
-        Object.defineProperty(el, "_OpenWeproInjected", {
-            configurable: false,
-            enumerable: false,
-            value: true,
-            writable: false
-        });
-        attrToInject.forEach(function(attr) {
-            if(el.hasAttribute && el.hasAttribute(attr))
-                el.setAttribute(attr, el.getAttribute(attr));
-        });
-        if(el.nodeName === "STYLE" && el.innerHTML.substr(0, 15) !== "/* OpenWepro */")
-            el.innerHTML = convertCSS(el.innerHTML);
-        if(el.hasAttribute && el.hasAttribute("style")) {
-            var currentStyle = el.getAttribute("style");
-            if(currentStyle && currentStyle.substr(0, 15) !== "/* OpenWepro */")
-                el.setAttribute("style", convertCSS(currentStyle));
-        }
-    }
+    updateElementAttributes(el);
+    if(el.nodeName === "STYLE" && el.innerHTML.substr(0, 15) !== "/* OpenWepro */")
+        el.innerHTML = convertCSS(el.innerHTML);
     return el;
 }
 
 var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 var observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
-        if(mutation.addedNodes)
+        if(mutation.type === "childList")
             for(var i = 0; i < mutation.addedNodes.length; i++)
                 injectNode(mutation.addedNodes[i]);
-        if(mutation.type === "characterData") {
+        else if(mutation.type === "attributes")
+            updateElementAttribute(mutation.target, mutation.attributeName);
+        else if(mutation.type === "characterData")
             if(mutation.target.parentNode.nodeName === "STYLE" && mutation.target.data.substr(0, 15) !== "/* OpenWepro */")
                 mutation.target.data = convertCSS(mutation.target.data);
-        } else if(mutation.type === "attributes") {
-            if(mutation.attributeName === "style") {
-                var currentStyle = mutation.target.getAttribute("style");
-                if(currentStyle && currentStyle.substr(0, 15) !== "/* OpenWepro */")
-                    mutation.target.setAttribute("style", convertCSS(currentStyle));
-            }
-        }
     });
 });
 var observerConfig = {
@@ -152,7 +160,7 @@ var observerConfig = {
     attributes: true,
     characterData: true,
     subtree: true,
-    attributeFilter: ["action", "href", "src", "style"]
+    attributeFilter: attrToInject
 };
 observer.observe(document.documentElement, observerConfig);
 
