@@ -9,7 +9,7 @@ var urlPrefix = "@path_prefix@";
 var urlMatcher = new RegExp("^/(.*?)/(.*?)/:(?:/(.*))?$");
 var urlParsed = urlMatcher.exec(location.pathname.substr(urlPrefix.length));
 if(!urlParsed)
-    throw "Can not parse URL: " + location.pathname;
+    throw Error("Can not parse URL: " + location.pathname);
 var targetURL = urlParsed[1] + "://" + urlParsed[2].split("/").reverse().join(".") + "/" + (urlParsed[3] || "");
 
 function convertURL(url) {
@@ -63,7 +63,7 @@ Object.defineProperty(Element.prototype, "_OpenWeproAttributes", {
         return this.__OpenWeproAttributes;
     },
     set: function(value) {
-        throw "Can not write read-only property _OpenWeproAttributes";
+        throw Error("Can not write read-only property _OpenWeproAttributes");
     }
 });
 Element.prototype.getAttribute = function(attr) {
