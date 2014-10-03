@@ -38,26 +38,26 @@ var oldHasAttribute = Element.prototype.hasAttribute;
 var oldSetAttribute = Element.prototype.setAttribute;
 var oldRemoveAttribute = Element.prototype.removeAttribute;
 Element.prototype.getAttribute = function(attr) {
-    if(this._weproAttributes)
-        return this._weproAttributes["attr_" + attr] || oldGetAttribute.call(this, attr);
+    if(this._OpenweproAttributes)
+        return this._OpenweproAttributes["attr_" + attr] || oldGetAttribute.call(this, attr);
     else
         return oldGetAttribute.call(this, attr);
 };
 Element.prototype.hasAttribute = function(attr) {
-    return (this._weproAttributes && (("attr_" + attr) in this._weproAttributes)) || oldHasAttribute.call(this, attr);
+    return (this._OpenweproAttributes && (("attr_" + attr) in this._OpenweproAttributes)) || oldHasAttribute.call(this, attr);
 };
 Element.prototype.setAttribute = function(attr, value) {
-    if(!this._weproAttributes)
-        this._weproAttributes = new Object();
+    if(!this._OpenweproAttributes)
+        this._OpenweproAttributes = new Object();
     if(attr === "crossorigin") {
         if(value === "anonymous") {
-            this._weproAttributes["attr_crossorigin"] = value;
+            this._OpenweproAttributes["attr_crossorigin"] = value;
             oldRemoveAttribute.call(this, attr);
         } else
             oldSetAttribute.call(this, attr, value);
         return value;
     } else if(attr === "action" || attr === "href" || attr === "src" || (this.nodeName === "PARAM" && this.name === "movie" && attr === "value")) {
-        this._weproAttributes["attr_" + attr] = value;
+        this._OpenweproAttributes["attr_" + attr] = value;
         if(this.nodeName === "SCRIPT") {
             oldSetAttribute.call(this, attr, urlPrefix + "/about/empty.js");
             var el = this;
@@ -80,7 +80,7 @@ Element.prototype.setAttribute = function(attr, value) {
         return oldSetAttribute.call(this, attr, value);
 };
 Element.prototype.removeAttribute = function(attr) {
-    delete this._weproAttributes["attr_" + attr];
+    delete this._OpenweproAttributes["attr_" + attr];
     oldRemoveAttribute.call(this, attr);
 };
 function injectElementProperty(prop) {
