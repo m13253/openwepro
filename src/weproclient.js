@@ -42,7 +42,7 @@ function convertCSS(text) {
 
 var oldXMLHttpRequestOpen = XMLHttpRequest.prototype.open;
 XMLHttpRequest.prototype.open = function(method, url, async) {
-    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async);
+    return oldXMLHttpRequestOpen.call(this, method, convertURL(url), async !== false);
 };
 
 var attrToInject = ["action", "crossorigin", "href", "src", "style", "value"];
@@ -117,14 +117,14 @@ Element.prototype.removeAttribute = function(attr) {
 function updateElementAttribute(el, attr) {
     if(el._OpenWeproAttributes && !("attr_" + attr in el._OpenWeproAttributes) && el.hasAttribute && el.hasAttribute(attr)) {
         el.setAttribute(attr, el.getAttribute(attr));
-        if(attr !== "style")
-            return Object.defineProperty(el, attr, {
-                configurable: true,
-                enumerable: true,
-                get: function() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
-                set: function(value) { this.setAttribute(attr, value); return value; }
-            });
     }
+    if(attr !== "style")
+        return Object.defineProperty(el, attr, {
+            configurable: true,
+            enumerable: true,
+            get: function() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
+            set: function(value) { this.setAttribute(attr, value); return value; }
+        });
 }
 
 function updateElementAttributes(el) {
