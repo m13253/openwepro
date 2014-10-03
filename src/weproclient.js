@@ -73,6 +73,7 @@ Element.prototype.hasAttribute = function(attr) {
     return "attr_" + attr in this._OpenWeproAttributes || oldHasAttribute.call(this, attr);
 };
 Element.prototype.setAttribute = function(attr, value) {
+    console.log(this.nodeName.toLowerCase() + "." + attr + " = " + value);
     if(attr === "crossorigin") {
         if(value === "anonymous") {
             this._OpenWeproAttributes["attr_crossorigin"] = value;
@@ -112,20 +113,18 @@ Element.prototype.removeAttribute = function(attr) {
     delete this._OpenWeproAttributes["attr_" + attr];
     oldRemoveAttribute.call(this, attr);
 };
-function injectElementProperty(prop) {
-    return Object.defineProperty(Element.prototype, prop, {
-        configurable: true,
-        enumerable: true,
-        get: function() { return this.hasAttribute(prop) ? this.getAttribute(prop) : undefined; },
-        set: function(value) { this.setAttribute(prop, value); return value; }
-    });
-}
-attrToInject.forEach(injectElementProperty);
 
 function updateElementAttribute(el, attr) {
-    console.log("Update: " + el.nodeName + "." + attr);
-    if(el._OpenWeproAttributes && !("attr_" + attr in el._OpenWeproAttributes) && el.hasAttribute && el.hasAttribute(attr))
+    if(el._OpenWeproAttributes && !("attr_" + attr in el._OpenWeproAttributes) && el.hasAttribute && el.hasAttribute(attr)) {
         el.setAttribute(attr, el.getAttribute(attr));
+        if(attr !== "style")
+            return Object.defineProperty(el, attr, {
+                configurable: true,
+                enumerable: true,
+                get: function() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
+                set: function(value) { this.setAttribute(attr, value); return value; }
+            });
+    }
 }
 
 function updateElementAttributes(el) {
