@@ -42,14 +42,14 @@ if(window.location.protocol === "http:") {
     var el = document.createElement("p");
     el.style.color = "red";
     el.style.fontSize = "125%";
-    el.testContent = "Error: Failed to build a secure (HTTPS) connection to OpenWepro server. Your data might be intercepted by your Internet provider.";
+    el.textContent = "Error: Failed to build a secure (HTTPS) connection to OpenWepro server. Your data might be intercepted by your Internet provider.";
     document.body.appendChild(el);
 }
 if(navigator.userAgent.indexOf(" Chrome/") === -1 && navigator.userAgent.indexOf(" Chromium/") === -1) {
     var el = document.createElement("p");
     el.style.color = "orange";
     el.style.fontSize = "125%";
-    el.testContent = "Warning: OpenWepro is designed for Google Chrome. Please consider switching to Google Chrome if something goes wrong.";
+    el.textContent = "Warning: OpenWepro is designed for Google Chrome. Please consider switching to Google Chrome if something goes wrong.";
     document.body.appendChild(el);
 }
 }(this));
