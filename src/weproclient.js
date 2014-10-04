@@ -143,8 +143,8 @@ function updateElementAttributes(el) {
 
 function injectNode(el) {
     updateElementAttributes(el);
-    if(el.nodeName === "STYLE" && el.innerHTML.substr(0, 15) !== "/* OpenWepro */")
-        el.innerHTML = convertCSS(el.innerHTML);
+    if(el.nodeName === "STYLE" && el.textContent.substr(0, 15) !== "/* OpenWepro */")
+        el.textContent = convertCSS(el.textContent);
     return el;
 }
 
