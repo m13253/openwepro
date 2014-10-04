@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd src
+exec python3 openwepro.py ||
+exec python openwepro.py
