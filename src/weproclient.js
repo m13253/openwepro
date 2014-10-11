@@ -5,11 +5,15 @@
 (function(window) {
 "use strict";
 
+var OpenWeproError = function(what) {
+    return Error("[OpenWepro] " + what);
+};
+
 var urlPrefix = "@path_prefix@";
 var urlMatcher = new RegExp("^/(.*?)/(.*?)/:(?:/(.*))?$");
 var urlParsed = urlMatcher.exec(location.pathname.substr(urlPrefix.length));
 if(!urlParsed)
-    throw Error("Can not parse URL: " + location.pathname);
+    throw OpenWeproError("can not parse URL: " + location.pathname);
 var targetURL = urlParsed[1] + "://" + urlParsed[2].split("/").reverse().join(".") + "/" + (urlParsed[3] || "");
 
 function convertURL(url) {
@@ -50,6 +54,7 @@ var oldGetAttribute = Element.prototype.getAttribute;
 var oldHasAttribute = Element.prototype.hasAttribute;
 var oldSetAttribute = Element.prototype.setAttribute;
 var oldRemoveAttribute = Element.prototype.removeAttribute;
+var documentWritePoint = null; /* document.write */
 Object.defineProperty(Element.prototype, "_OpenWeproAttributes", {
     configurable: false,
     enumerable: false,
@@ -63,7 +68,7 @@ Object.defineProperty(Element.prototype, "_OpenWeproAttributes", {
         return this.__OpenWeproAttributes;
     },
     set: function(value) {
-        throw Error("Can not write read-only property _OpenWeproAttributes");
+        throw Error("can not write read-only property _OpenWeproAttributes");
     }
 });
 Element.prototype.getAttribute = function(attr) {
@@ -91,6 +96,8 @@ Element.prototype.setAttribute = function(attr, value) {
             var xhr = new XMLHttpRequest();
             xhr.open("GET", value, this.hasAttribute("async"));
             xhr.addEventListener("load", function() {
+                var oldDocumentWritePoint = documentWritePoint;
+                documentWritePoint = el;
                 if(!el.hasAttribute("defer") && xhr.status === 200)
                     try {
                         window.eval("/* " + value.replace('*/', '%2a/') + " */\n" + xhr.responseText);
@@ -102,9 +109,13 @@ Element.prototype.setAttribute = function(attr, value) {
                     }
                 else
                     oldSetAttribute.call(el, attr, convertURL(value));
+                documentWritePoint = oldDocumentWritePoint;
             });
             xhr.addEventListener("error", function() {
+                var oldDocumentWritePoint = documentWritePoint;
+                documentWritePoint = el;
                 oldSetAttribute.call(el, attr, convertURL(value));
+                documentWritePoint = oldDocumentWritePoint;
             });
             xhr.send(null);
         } else
@@ -179,15 +190,42 @@ window.Worker = function(url) {
 window.Worker.__proto__ = oldWorker.__proto__;
 
 var oldCookie = document.cookie;
-Object.defineProperty(document, "cookie", { get: function() { return oldCookie; }, set: function() {} });
+Object.defineProperty(document, "cookie", {
+    get: function() {
+        return oldCookie;
+    }, set: function(value) {
+        console.warn("[OpenWepro] document.cookie has not been unimplemented yet");
+        return value;
+    }
+});
 var oldDomain = document.domain;
-Object.defineProperty(document, "domain", { get: function() { return oldDomain; }, set: function() {} });
+Object.defineProperty(document, "domain", {
+    get: function() {
+        return oldDomain;
+    }, set: function(value) {
+        console.warn("[OpenWepro] document.domain has not been unimplemented yet");
+        return value;
+    }
+});
 
-document.write = function(content) {
-    console.warn("document.write is disabled by OpenWepro.");
+document.write = function(markup) {
+    if(documentWritePoint) {
+        var documentWriteParent = documentWritePoint.parentNode;
+        var documentWriteReference = documentWritePoint.nextSibling;
+    } else {
+        var documentWriteParent = document.body || document.head || document.documentElement;
+        var documentWriteReference = null;
+    }
+    var tmp = document.createElement('body');
+    tmp.innerHTML = markup;
+    var frag = document.createDocumentFragment();
+    var child;
+    while((child = tmp.firstChild))
+        frag.appendChild(child);
+    documentWriteParent.insertBefore(frag, documentWriteReference);
 };
-document.writeln = function(content) {
-    console.warn("document.writeln is disabled by OpenWepro.");
+document.writeln = function(markup) {
+    return document.write(markup + "\n");
 };
 
 }(this));
