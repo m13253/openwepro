@@ -183,4 +183,11 @@ Object.defineProperty(document, "cookie", { get: function() { return oldCookie; 
 var oldDomain = document.domain;
 Object.defineProperty(document, "domain", { get: function() { return oldDomain; }, set: function() {} });
 
+document.write = function(content) {
+    console.warn("document.write is disabled by OpenWepro.");
+};
+document.writeln = function(content) {
+    console.warn("document.writeln is disabled by OpenWepro.");
+};
+
 }(this));
