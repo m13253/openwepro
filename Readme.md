@@ -18,6 +18,6 @@ Notice for service providers
 
 It is required to set up a load balancer, functioning as well as an SSL wrapper, for example Nginx, after OpenWepro.
 
-It is preferred to set up a cache, for example Squid or Varnish, before OpenWepro. Use `export http_proxy=http://127.0.0.1:3128` before starting OpenWepro to tell OpenWepro use Squid as upstream.
+It is preferred to set up a cache, for example Squid or Varnish, before OpenWepro. Use `export http_proxy=http://127.0.0.1:3128` in prior to starting OpenWepro to tell OpenWepro use Squid as upstream.
 
 You can also use ZiProxy to compress the web page for a slow network connection along with OpenWepro.
