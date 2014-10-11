@@ -82,20 +82,20 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
     def do_http_proxy(self, message, payload, url):
         self.log_proxy.info(url)
         request_headers = [(k, ensure_utf8(v)) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'AUTHORIZATION', 'HOST', 'ORIGIN', 'REFERER', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
-        if 'Referer' in message.headers:
-            request_headers.append(('Referer', self.parse_url(message.headers.get('Referer'))))
-        if 'X-Forwarded-For' in message.headers:
-            x_forwarded_for = list(map(str.strip, message.headers.get('X-Forwarded-For', '').split(',')))
+        if 'REFERER' in message.headers:
+            request_headers.append(('Referer', self.parse_url(message.headers.get('REFERER'))))
+        if 'X-FORWARDED-FOR' in message.headers:
+            x_forwarded_for = list(map(str.strip, message.headers.get('X-FORWARDED-FOR', '').split(',')))
         else:
             x_forwarded_for = list()
-        if 'X-Real-IP' in message.headers:
-            x_forwarded_for.append(message.headers.get('X-Real-IP'))
+        if 'X-REAL-IP' in message.headers:
+            x_forwarded_for.append(message.headers.get('X-REAL-IP'))
         else:
             x_forwarded_for.append(str(self.writer.get_extra_info('peername')[0]))
         request_headers.append(('X-Forwarded-For', ', '.join(x_forwarded_for)))
         request_headers.append(('Via', 'OpenWepro (like CGIProxy, +https://github.com/m13253/openwepro)'))
         request = yield from aiohttp.client.request(message.method, url, data=(yield from payload.read()), headers=request_headers, allow_redirects=False, version=message.version, connector=self.upstream_connector)
-        content_type = request.headers.get('Content-Type', '').split(';', 1)[0]
+        content_type = request.headers.get('CONTENT-TYPE', '').split(';', 1)[0]
 
         response = aiohttp.Response(self.writer, request.status, http_version=request.version)
         response.SERVER_SOFTWARE = request.headers.get('Server', response.SERVER_SOFTWARE)
