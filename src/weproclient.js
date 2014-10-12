@@ -120,9 +120,9 @@ Element.prototype.setAttribute = function(attr, value) {
             xhr.send(null);
         } else
             oldSetAttribute.call(this, attr, convertURL(value));
-    } else if(attr === "value") {
-        this._OpenWeproAttributes["attr_" + attr] = value;
-        oldSetAttribute.call(this, attr, this.nodeName === "PARAM" && this.name === "movie" ? convertURL(value) : value);
+    } else if(attr === "value" && this.nodeName === "PARAM" && this.name === "movie") { /* Adobe Flash */
+        this._OpenWeproAttributes["attr_value"] = value;
+        oldSetAttribute.call(this, attr, convertURL(value));
     } else
         return oldSetAttribute.call(this, attr, value);
     return value;
@@ -133,16 +133,17 @@ Element.prototype.removeAttribute = function(attr) {
 };
 
 function updateElementAttribute(el, attr) {
-    if(el._OpenWeproAttributes && !("attr_" + attr in el._OpenWeproAttributes) && el.hasAttribute && el.hasAttribute(attr)) {
-        el.setAttribute(attr, el.getAttribute(attr));
+    if(attr !== "value" || (el.nodeName === "PARAM" && el.name === "movie")) {
+        if(el._OpenWeproAttributes && !("attr_" + attr in el._OpenWeproAttributes) && el.hasAttribute && el.hasAttribute(attr))
+            el.setAttribute(attr, el.getAttribute(attr));
+        if(attr !== "style")
+            return Object.defineProperty(el, attr, {
+                configurable: true,
+                enumerable: true,
+                get: function() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
+                set: function(value) { this.setAttribute(attr, value); return value; }
+            });
     }
-    if(attr !== "style")
-        return Object.defineProperty(el, attr, {
-            configurable: true,
-            enumerable: true,
-            get: function() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
-            set: function(value) { this.setAttribute(attr, value); return value; }
-        });
 }
 
 function updateElementAttributes(el) {
