@@ -144,6 +144,7 @@ function updateElementAttribute(el, attr) {
                 set: function(value) { this.setAttribute(attr, value); return value; }
             });
     }
+    return el;
 }
 
 function updateElementAttributes(el) {
@@ -151,6 +152,7 @@ function updateElementAttributes(el) {
         attrToInject.forEach(function(attr) {
             updateElementAttribute(el, attr);
         });
+    return el;
 }
 
 function injectNode(el) {
@@ -181,6 +183,11 @@ var observerConfig = {
     attributeFilter: attrToInject
 };
 observer.observe(document.documentElement, observerConfig);
+
+var oldCreateElement = Document.prototype.createElement;
+Document.prototype.createElement = function(tagName) {
+    return injectNode(oldCreateElement.call(this, tagName));
+};
 
 var oldWorker = window.Worker;
 window.Worker = function(url) {
