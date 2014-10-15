@@ -163,26 +163,29 @@ function injectNode(el) {
 }
 
 var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-var observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if(mutation.type === "childList")
-            for(var i = 0; i < mutation.addedNodes.length; i++)
-                injectNode(mutation.addedNodes[i]);
-        else if(mutation.type === "attributes")
-            updateElementAttribute(mutation.target, mutation.attributeName);
-        else if(mutation.type === "characterData")
-            if(mutation.target.parentNode.nodeName === "STYLE" && mutation.target.data.substr(0, 15) !== "/* OpenWepro */")
-                mutation.target.data = convertCSS(mutation.target.data);
+if(MutationObserver) {
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if(mutation.type === "childList")
+                for(var i = 0; i < mutation.addedNodes.length; i++)
+                    injectNode(mutation.addedNodes[i]);
+            else if(mutation.type === "attributes")
+                updateElementAttribute(mutation.target, mutation.attributeName);
+            else if(mutation.type === "characterData")
+                if(mutation.target.parentNode.nodeName === "STYLE" && mutation.target.data.substr(0, 15) !== "/* OpenWepro */")
+                    mutation.target.data = convertCSS(mutation.target.data);
+        });
     });
-});
-var observerConfig = {
-    childList: true,
-    attributes: true,
-    characterData: true,
-    subtree: true,
-    attributeFilter: attrToInject
-};
-observer.observe(document.documentElement, observerConfig);
+    var observerConfig = {
+        childList: true,
+        attributes: true,
+        characterData: true,
+        subtree: true,
+        attributeFilter: attrToInject
+    };
+    observer.observe(document.documentElement, observerConfig);
+} else
+    console.warn("[OpenWepro] can not set up MutationObserver");
 
 var oldCreateElement = Document.prototype.createElement;
 Document.prototype.createElement = function(tagName) {
@@ -198,23 +201,41 @@ window.Worker = function(url) {
 window.Worker.__proto__ = oldWorker.__proto__;
 
 var oldCookie = document.cookie;
-Object.defineProperty(document, "cookie", {
-    get: function() {
-        return oldCookie;
-    }, set: function(value) {
-        console.warn("[OpenWepro] document.cookie has not been unimplemented yet");
-        return value;
-    }
-});
+try {
+    Object.defineProperty(document, "cookie", {
+        configurable: false,
+        get: function() {
+            return oldCookie;
+        }, set: function(value) {
+            console.warn("[OpenWepro] document.cookie has not been unimplemented yet: " + value);
+            return value;
+        }
+    });
+} catch(e) {
+    if(e.message && e.stack)
+        console.error(e.message + "\n\n" + e.stack);
+    else
+        console.error(e);
+    console.warn("[OpenWepro] can not inject document.cookie");
+}
 var oldDomain = document.domain;
-Object.defineProperty(document, "domain", {
-    get: function() {
-        return oldDomain;
-    }, set: function(value) {
-        console.warn("[OpenWepro] document.domain has not been unimplemented yet");
-        return value;
-    }
-});
+try {
+    Object.defineProperty(document, "domain", {
+        configurable: false,
+        get: function() {
+            return oldDomain;
+        }, set: function(value) {
+            console.warn("[OpenWepro] document.domain has not been unimplemented yet: " + value);
+            return value;
+        }
+    });
+} catch(e) {
+    if(e.message && e.stack)
+        console.error(e.message + "\n\n" + e.stack);
+    else
+        console.error(e);
+    console.warn("[OpenWepro] can not inject document.domain");
+}
 
 document.write = function(markup) {
     if(documentWritePoint) {
