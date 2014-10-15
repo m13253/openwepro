@@ -68,7 +68,7 @@ Object.defineProperty(Element.prototype, "_OpenWeproAttributes", {
         return this.__OpenWeproAttributes;
     },
     set: function(value) {
-        throw Error("can not write read-only property _OpenWeproAttributes");
+        throw OpenweproError("can not write read-only property _OpenWeproAttributes");
     }
 });
 Element.prototype.getAttribute = function(attr) {
@@ -137,12 +137,20 @@ function updateElementAttribute(el, attr) {
         if(el._OpenWeproAttributes && !("attr_" + attr in el._OpenWeproAttributes) && el.hasAttribute && el.hasAttribute(attr))
             el.setAttribute(attr, el.getAttribute(attr));
         if(attr !== "style")
-            return Object.defineProperty(el, attr, {
-                configurable: true,
-                enumerable: true,
-                get: function() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
-                set: function(value) { this.setAttribute(attr, value); return value; }
-            });
+            try {
+                Object.defineProperty(el, attr, {
+                    configurable: true,
+                    enumerable: true,
+                    get: function() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
+                    set: function(value) { this.setAttribute(attr, value); return value; }
+                });
+            } catch(e) {
+                if(e.message && e.stack)
+                    console.error(e.message + "\n\n" + e.stack);
+                else
+                    console.error(e);
+                console.warn("[OpenWepro] can not inject element." + attr);
+            }
     }
     return el;
 }
