@@ -278,20 +278,20 @@ function injectNode(el) {
         console.warn("[OpenWepro] can not set up MutationObserver");
 })();
 
-// Mobile Safari 6 has strange bug on MutationObserver
+// Mobile Safari 6 has a strange bug on MutationObserver
 (function setupTraverseDOM() {
     var thisScriptElement = document.getElementsByTagName("script");
     thisScriptElement = thisScriptElement[thisScriptElement.length-1];
     document.addEventListener("DOMContentLoaded", function onDOMContentLoaded() {
         var elementIterator = function elementIterator(el) {
-            for(; el; el = el.nextElementSibling) {
+            for(; el; el = el.nextSibling) {
                 if(el !== thisScriptElement)
                     injectNode(el);
-                if(el.firstElementChild)
-                    elementIterator(el.firstElementChild);
+                if(el.firstChild)
+                    elementIterator(el.firstChild);
             }
         };
-        elementIterator(document.firstElementChild);
+        elementIterator(document.firstChild);
     });
 })();
 
