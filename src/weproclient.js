@@ -138,20 +138,6 @@ var attrToInject = ["action", "crossorigin", "href", "src", "style", "value"];
         delete this._OpenWeproAttributes["attr_" + attr];
         oldRemoveAttribute.call(this, attr);
     };
-    attrToInject.forEach(function attrToInjectEach(attr) {
-        if(attr !== "style")
-            try {
-                Object.defineProperty(Element.prototype, attr, {
-                    configurable: true,
-                    enumerable: true,
-                    get: function get() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
-                    set: function set(value) { this.setAttribute(attr, value); return value; }
-                });
-            } catch(e) {
-                TraceBackError(e);
-                console.warn("[OpenWepro] can not inject Element.prototype." + attr);
-            }
-    });
 })();
 
 function updateElementAttribute(el, attr) {
@@ -161,11 +147,31 @@ function updateElementAttribute(el, attr) {
     return el;
 }
 
+function injectElementAttribute(el) {
+    attrToInject.forEach(function attrToInjectEach(attr) {
+        if(attr !== "style")
+            try {
+                Object.defineProperty(el, attr, {
+                    configurable: true,
+                    enumerable: true,
+                    get: function get() { return this.hasAttribute(attr) ? this.getAttribute(attr) : undefined; },
+                    set: function set(value) { this.setAttribute(attr, value); return value; }
+                });
+            } catch(e) {
+                TraceBackError(e);
+                console.warn("[OpenWepro] can not inject element." + attr);
+            }
+    });
+}
+injectElementAttribute(Element.prototype);
+
 function injectNode(el) {
-    if(el._OpenWeproAttributes)
+    if(el._OpenWeproAttributes) {
+        injectElementAttribute(el);
         attrToInject.forEach(function injectNodeEach(attr) {
             updateElementAttribute(el, attr);
         });
+    }
     if(el.nodeName === "STYLE" && el.textContent.substr(0, 15) !== "/* OpenWepro */")
         el.textContent = convertCSS(el.textContent);
     return el;
