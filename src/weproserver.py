@@ -81,7 +81,7 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
     @asyncio.coroutine
     def do_http_proxy(self, message, payload, url):
         self.log_proxy.info(url)
-        request_headers = [(k, ensure_utf8(v)) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'AUTHORIZATION', 'HOST', 'ORIGIN', 'REFERER', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
+        request_headers = [(k, ensure_utf8(v)) for k, v in message.headers.items() if k.upper() not in {'ACCEPT-ENCODING', 'ALT-SVC', 'ALTERNATE-PROTOCOL', 'AUTHORIZATION', 'HOST', 'ORIGIN', 'REFERER', 'X-FORWARDED-FOR', 'X-REAL-IP'}]
         if 'REFERER' in message.headers:
             request_headers.append(('Referer', self.parse_url(message.headers.get('REFERER'))))
         if 'X-FORWARDED-FOR' in message.headers:
