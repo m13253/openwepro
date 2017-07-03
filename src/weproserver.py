@@ -18,6 +18,7 @@ import aiohttp.server
 
 
 class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
+
     @asyncio.coroutine
     def handle_request(self, message, payload):
         if self.auth_passwd:
@@ -161,7 +162,6 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         response.write(responseHtml)
         yield from response.write_eof()
 
-
     def parse_url(self, url, ignore_error=True):
         url_matcher = re.compile('/(.*?)/(.*?)/:(?:/(.*))?$')
         url_parsed = url_matcher.match(url)
@@ -171,15 +171,14 @@ class HttpRequestHandler(aiohttp.server.ServerHttpProtocol):
         if url_parsed[0] in {'http', 'https'}:
             return '%s://%s/%s' % (url_parsed[0], '.'.join(reversed(url_parsed[1].split('/'))), url_parsed[2] or '')
 
-
     def convert_url(self, target, base=None):
         url = target if base is None else urllib.parse.urljoin(base, target)
         conv_url_matcher = re.compile('(https?)://(.*?)(?:/(.*))?$')
         conv_url_match = conv_url_matcher.match(url)
-        if not conv_url_match: return target
+        if not conv_url_match:
+            return target
         conv_url_match = conv_url_match.groups()
         return '%s/%s/%s/:/%s' % (self.path_prefix, conv_url_match[0], '/'.join(reversed(conv_url_match[1].split('.'))), conv_url_match[2] or '')
-
 
     def convert_cookie(self, cookie, url):
         domain = urllib.parse.urlsplit(url).netloc
